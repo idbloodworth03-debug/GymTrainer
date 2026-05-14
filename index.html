@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Weight Room Trainer</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --card: #22263a;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --text: #e8eaf0;
+      --muted: #7a7f9a;
+      --success: #4caf89;
+      --warning: #f5a623;
+      --border: #2e3250;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent2); }
+
+    nav { display: flex; gap: 8px; }
+
+    nav button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    nav button:hover, nav button.active {
+      background: var(--card);
+      color: var(--text);
+    }
+    nav button.active { color: var(--accent); font-weight: 600; }
+
+    /* ── Layout ── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      gap: 0;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sidebar-section h3 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .muscle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .muscle-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .muscle-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .muscle-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--card);
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .stat-row .label { font-size: 0.82rem; color: var(--muted); }
+    .stat-row .value { font-size: 0.9rem; font-weight: 600; }
+
+    /* ── Center Panel ── */
+    .center {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+    }
+    .panel-tab {
+      padding: 14px 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .panel-tab:hover { color: var(--text); }
+    .panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* ── Workout Card ── */
+    .workout-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .workout-title h2 { font-size: 1.4rem; margin-bottom: 4px; }
+    .workout-title p { color: var(--muted); font-size: 0.88rem; }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+
+    .exercise-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .exercise-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+    .exercise-card:hover { border-color: var(--accent); }
+    .exercise-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent)20; }
+
+    .exercise-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .exercise-name { font-weight: 600; font-size: 1rem; }
+    .exercise-badge {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--accent)22;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .sets-table { width: 100%; border-collapse: collapse; }
+    .sets-table th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      text-align: left;
+      padding: 4px 8px;
+    }
+    .sets-table td { padding: 6px 8px; }
+
+    .set-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+      padding: 4px 8px;
+      width: 70px;
+      text-align: center;
+    }
+    .set-input:focus { outline: none; border-color: var(--accent); }
+
+    .set-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      background: none;
+      transition: all 0.2s;
+    }
+    .set-check.done { background: var(--success); border-color: var(--success); }
+
+    /* ── AI Chat Panel ── */
+    .ai-panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ai-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ai-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .ai-name { font-weight: 600; font-size: 0.95rem; }
+    .ai-status { font-size: 0.75rem; color: var(--success); }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .message.ai {
+      background: var(--card);
+      border: 1px solid var(--border);
+      align-self: flex-start;
+      border-radius: 4px 12px 12px 12px;
+    }
+    .message.user {
+      background: var(--accent);
+      color: #fff;
+      align-self: flex-end;
+      border-radius: 12px 4px 12px 12px;
+    }
+    .message-time { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+
+    .quick-prompts {
+      padding: 8px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .quick-prompt {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-prompt:hover { border-color: var(--accent); color: var(--accent); }
+
+    .chat-input-area {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      width: 40px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: opacity 0.2s;
+    }
+    .send-btn:hover { opacity: 0.85; }
+
+    /* ── Progress Rings ── */
+    .progress-ring-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .ring-card {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+    .ring-card svg { display: block; margin: 0 auto 8px; }
+    .ring-card .ring-label { font-size: 0.75rem; color: var(--muted); }
+    .ring-card .ring-value { font-size: 1.1rem; font-weight: 700; }
+
+    /* ── Timer ── */
+    .rest-timer {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .rest-timer.visible { display: block; }
+    .timer-display {
+      font-size: 2.4rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      margin: 8px 0;
+    }
+    .timer-label { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      .sidebar, .ai-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AI<span>Lift</span></div>
+  <nav>
+    <button class="active" onclick="switchNav(this,'workout')">Workout</button>
+    <button onclick="switchNav(this,'program')">Program</button>
+    <button onclick="switchNav(this,'history')">History</button>
+    <button onclick="switchNav(this,'profile')">Profile</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Left Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h3>Target Muscles</h3>
+      <div class="muscle-grid">
+        <button class="muscle-btn selected" onclick="toggleMuscle(this)">Chest</button>
+        <button class="muscle-btn selected" onclick="toggleMuscle(this)">Triceps</button>
+        <button class="muscle-btn" onclick="toggleMuscle(this)">Back</button>
+        <button class="muscle-btn" onclick="toggleMuscle(this)">Biceps</button>
+        <button class="muscle-btn" onclick="toggleMuscle(this)">Shoulders</button>
+        <button class="muscle-btn" onclick="toggleMuscle(this)">Legs</button>
+        <button class="muscle-btn" onclick="toggleMuscle(this)">Core</button>
+        <button class="muscle-btn" onclick="toggleMuscle(this)">Glutes</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Today's Stats</h3>
+      <div class="stat-row">
+        <span class="label">Volume</span>
+        <span class="value" id="stat-volume">0 lbs</span>
+      </div>
+      <div class="stat-row">
+        <span class="label">Sets Done</span>
+        <span class="value" id="stat-sets">0 / 12</span>
+      </div>
+      <div class="stat-row">
+        <span class="label">Duration</span>
+        <span class="value" id="stat-duration">00:00</span>
+      </div>
+      <div class="stat-row">
+        <span class="label">Est. Calories</span>
+        <span class="value" id="stat-cals">0 kcal</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Weekly Volume</h3>
+      <canvas id="volumeChart" width="228" height="80" style="border-radius:8px;"></canvas>
+    </div>
+
+    <div style="margin-top:auto;">
+      <button class="btn btn-success" style="width:100%;" onclick="finishWorkout()">Finish Workout</button>
+    </div>
+  </aside>
+
+  <!-- ── Center Panel ── -->
+  <div class="center">
+    <div class="panel-tabs">
+      <div class="panel-tab active" onclick="switchTab(this,'today')">Today</div>
+      <div class="panel-tab" onclick="switchTab(this,'generate')">Generate Plan</div>
+      <div class="panel-tab" onclick="switchTab(this,'exercises')">Exercise Library</div>
+    </div>
+
+    <div class="panel-content" id="tab-today">
+
+      <div class="workout-header">
+        <div class="workout-title">
+          <h2>Push Day A</h2>
+          <p id="workout-date"></p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="startTimer(90)">Rest Timer</button>
+          <button class="btn btn-primary btn-sm" onclick="addExercise()">+ Add Exercise</button>
+        </div>
+      </div>
+
+      <!-- Rest Timer -->
+      <div class="rest-timer" id="restTimer">
+        <div class="timer-label">REST</div>
+        <div class="timer-display" id="timerDisplay">1:30</div>
+        <button class="btn btn-secondary btn-sm" onclick="stopTimer()">Skip</button>
+      </div>
+
+      <!-- Progress rings -->
+      <div class="progress-ring-container">
+        <div class="ring-card">
+          <svg width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
+            <circle id="ring1" cx="30" cy="30" r="24" fill="none" stroke="var(--accent)" stroke-width="5"
+              stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"
+              transform="rotate(-90 30 30)" style="transition:stroke-dashoffset 0.6s ease"/>
+          </svg>
+          <div class="ring-value" id="ring1-val">0%</div>
+          <div class="ring-label">Completed</div>
+        </div>
+        <div class="ring-card">
+          <svg width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
+            <circle id="ring2" cx="30" cy="30" r="24" fill="none" stroke="var(--accent2)" stroke-width="5"
+              stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"
+              transform="rotate(-90 30 30)" style="transition:stroke-dashoffset 0.6s ease"/>
+          </svg>
+          <div class="ring-value" id="ring2-val">0 lbs</div>
+          <div class="ring-label">Volume</div>
+        </div>
+        <div class="ring-card">
+          <svg width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
+            <circle id="ring3" cx="30" cy="30" r="24" fill="none" stroke="var(--success)" stroke-width="5"
+              stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"
+              transform="rotate(-90 30 30)" style="transition:stroke-dashoffset 0.6s ease"/>
+          </svg>
+          <div class="ring-value" id="ring3-val">0 kcal</div>
+          <div class="ring-label">Calories</div>
+        </div>
+      </div>
+
+      <!-- Exercise list -->
+      <div class="exercise-list" id="exerciseList">
+
+        <div class="exercise-card" id="ex-0">
+          <div class="exercise-top">
+            <span class="exercise-name">Bench Press</span>
+            <span class="exercise-badge">Compound</span>
+          </div>
+          <table class="sets-table">
+            <thead>
+              <tr>
+                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
+              </tr>
+            </thead>
+            <tbody id="sets-0"></tbody>
+          </table>
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(0)">+ Set</button>
+        </div>
+
+        <div class="exercise-card" id="ex-1">
+          <div class="exercise-top">
+            <span class="exercise-name">Incline Dumbbell Press</span>
+            <span class="exercise-badge">Compound</span>
+          </div>
+          <table class="sets-table">
+            <thead>
+              <tr>
+                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
+              </tr>
+            </thead>
+            <tbody id="sets-1"></tbody>
+          </table>
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(1)">+ Set</button>
+        </div>
+
+        <div class="exercise-card" id="ex-2">
+          <div class="exercise-top">
+            <span class="exercise-name">Overhead Press</span>
+            <span class="exercise-badge">Compound</span>
+          </div>
+          <table class="sets-table">
+            <thead>
+              <tr>
+                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
+              </tr>
+            </thead>
+            <tbody id="sets-2"></tbody>
+          </table>
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(2)">+ Set</button>
+        </div>
+
+        <div class="exercise-card" id="ex-3">
+          <div class="exercise-top">
+            <span class="exercise-name">Tricep Pushdown</span>
+            <span class="exercise-badge">Isolation</span>
+          </div>
+          <table class="sets-table">
+            <thead>
+              <tr>
+                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
+              </tr>
+            </thead>
+            <tbody id="sets-3"></tbody>
+          </table>
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(3)">+ Set</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Generate Plan Tab (placeholder) -->
+    <div class="panel-content" id="tab-generate" style="display:none;">
+      <h2 style="margin-bottom:12px;">Generate AI Program</h2>
+      <p style="color:var(--muted);margin-bottom:24px;">Tell the AI coach your goals and it will build a custom program for you.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;">
+        <select class="set-input" style="width:100%;padding:10px 14px;" id="gen-goal">
+          <option>Strength & Power</option>
+          <option>Muscle Hypertrophy</option>
+          <option>Fat Loss + Tone</option>
+          <option>Athletic Performance</option>
+          <option>General Fitness</option>
+        </select>
+        <select class="set-input" style="width:100%;padding:10px 14px;" id="gen-days">
+          <option>3 days / week</option>
+          <option>4 days / week</option>
+          <option>5 days / week</option>
+          <option>6 days / week</option>
+        </select>
+        <select class="set-input" style="width:100%;padding:10px 14px;" id="gen-level">
+          <option>Beginner</option>
+          <option>Intermediate</option>
+          <option>Advanced</option>
+        </select>
+        <button class="btn btn-primary" onclick="generateProgram()">Generate Program with AI</button>
+      </div>
+    </div>
+
+    <!-- Exercise Library Tab (placeholder) -->
+    <div class="panel-content" id="tab-exercises" style="display:none;">
+      <h2 style="margin-bottom:12px;">Exercise Library</h2>
+      <p style="color:var(--muted);">Browse and search exercises — coming up in the next step.</p>
+    </div>
+  </div>
+
+  <!-- ── AI Chat Panel ── -->
+  <aside class="ai-panel">
+    <div class="ai-header">
+      <div class="ai-avatar">🤖</div>
+      <div>
+        <div class="ai-name">Coach AI</div>
+        <div class="ai-status">● Online</div>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="message ai">
+        Hey! I'm your AI weight room coach. I can help you with form tips, suggest weight progressions, adjust your program, and answer any training questions. What do you need?
+        <div class="message-time">Now</div>
+      </div>
+    </div>
+
+    <div class="quick-prompts">
+      <span class="quick-prompt" onclick="quickPrompt(this)">Form check</span>
+      <span class="quick-prompt" onclick="quickPrompt(this)">Increase weight?</span>
+      <span class="quick-prompt" onclick="quickPrompt(this)">Feeling tired</span>
+      <span class="quick-prompt" onclick="quickPrompt(this)">Substitute exercise</span>
+    </div>
+
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask Coach AI..."
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+      <button class="send-btn" onclick="sendMessage()">&#9658;</button>
+    </div>
+  </aside>
+
+</main>
+
+<script>
+// ── Data ──
+const previousData = [
+  ['135 × 8', '135 × 8', '135 × 8'],
+  ['50 × 10', '50 × 10', '50 × 10'],
+  ['95 × 8', '95 × 8', '95 × 8'],
+  ['55 × 12', '55 × 12', '55 × 12'],
+];
+const defaultSets = [
+  [{w:135,r:8},{w:135,r:8},{w:135,r:8}],
+  [{w:50,r:10},{w:50,r:10},{w:50,r:10}],
+  [{w:95,r:8},{w:95,r:8},{w:95,r:8}],
+  [{w:55,r:12},{w:55,r:12},{w:55,r:12}],
+];
+
+const state = {
+  sets: defaultSets.map(ex => ex.map(s => ({...s, done: false}))),
+  totalSets: 0,
+  doneSets: 0,
+  startTime: Date.now(),
+  timerInterval: null,
+  workoutInterval: null,
+};
+
+// ── Init ──
+document.getElementById('workout-date').textContent =
+  new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+
+function init() {
+  for (let i = 0; i < state.sets.length; i++) {
+    state.sets[i].forEach((_, si) => renderSet(i, si));
+  }
+  countTotals();
+  startWorkoutClock();
+  drawVolumeChart();
+}
+
+function renderSet(exIdx, setIdx) {
+  const tbody = document.getElementById(`sets-${exIdx}`);
+  const s = state.sets[exIdx][setIdx];
+  const prev = previousData[exIdx][setIdx] || '—';
+  const tr = document.createElement('tr');
+  tr.id = `row-${exIdx}-${setIdx}`;
+  tr.innerHTML = `
+    <td style="color:var(--muted);font-size:0.82rem;">${setIdx + 1}</td>
+    <td style="color:var(--muted);font-size:0.8rem;">${prev}</td>
+    <td><input class="set-input" type="number" value="${s.w}" min="0" step="5"
+      oninput="updateSet(${exIdx},${setIdx},'w',this.value)"></td>
+    <td><input class="set-input" type="number" value="${s.r}" min="1" step="1"
+      oninput="updateSet(${exIdx},${setIdx},'r',this.value)"></td>
+    <td><button class="set-check ${s.done?'done':''}" id="chk-${exIdx}-${setIdx}"
+      onclick="toggleSet(${exIdx},${setIdx})"></button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function updateSet(exIdx, setIdx, field, val) {
+  state.sets[exIdx][setIdx][field] = parseFloat(val) || 0;
+  updateStats();
+}
+
+function toggleSet(exIdx, setIdx) {
+  const s = state.sets[exIdx][setIdx];
+  s.done = !s.done;
+  document.getElementById(`chk-${exIdx}-${setIdx}`).classList.toggle('done', s.done);
+  updateStats();
+  if (s.done) startTimer(90);
+}
+
+function addSet(exIdx) {
+  const last = state.sets[exIdx].slice(-1)[0] || {w:0,r:8};
+  const newIdx = state.sets[exIdx].length;
+  state.sets[exIdx].push({w: last.w, r: last.r, done: false});
+  previousData[exIdx].push('—');
+  renderSet(exIdx, newIdx);
+  countTotals();
+  updateStats();
+}
+
+function countTotals() {
+  state.totalSets = state.sets.reduce((a, ex) => a + ex.length, 0);
+}
+
+function updateStats() {
+  const done = state.sets.flat().filter(s => s.done).length;
+  const vol = state.sets.flat().filter(s => s.done).reduce((a, s) => a + s.w * s.r, 0);
+  const cals = Math.round(vol * 0.045);
+  const pct = state.totalSets ? done / state.totalSets : 0;
+
+  document.getElementById('stat-sets').textContent = `${done} / ${state.totalSets}`;
+  document.getElementById('stat-volume').textContent = `${vol.toLocaleString()} lbs`;
+  document.getElementById('stat-cals').textContent = `${cals} kcal`;
+  document.getElementById('ring1-val').textContent = `${Math.round(pct*100)}%`;
+  document.getElementById('ring2-val').textContent = `${vol.toLocaleString()}`;
+  document.getElementById('ring3-val').textContent = `${cals}`;
+
+  const circumference = 150.8;
+  document.getElementById('ring1').style.strokeDashoffset = circumference * (1 - pct);
+  document.getElementById('ring2').style.strokeDashoffset = circumference * (1 - Math.min(vol/5000, 1));
+  document.getElementById('ring3').style.strokeDashoffset = circumference * (1 - Math.min(cals/400, 1));
+}
+
+// ── Timer ──
+let timerSeconds = 0;
+let timerIv = null;
+
+function startTimer(seconds) {
+  if (timerIv) clearInterval(timerIv);
+  timerSeconds = seconds;
+  document.getElementById('restTimer').classList.add('visible');
+  renderTimerDisplay();
+  timerIv = setInterval(() => {
+    timerSeconds--;
+    renderTimerDisplay();
+    if (timerSeconds <= 0) stopTimer();
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerIv);
+  timerIv = null;
+  document.getElementById('restTimer').classList.remove('visible');
+}
+
+function renderTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+// ── Workout Clock ──
+function startWorkoutClock() {
+  setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2,'0');
+    const s = (elapsed % 60).toString().padStart(2,'0');
+    document.getElementById('stat-duration').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+// ── Volume Chart ──
+function drawVolumeChart() {
+  const canvas = document.getElementById('volumeChart');
+  const ctx = canvas.getContext('2d');
+  const data = [18200, 21000, 16500, 23400, 19800, 25100, 0];
+  const days = ['M','T','W','T','F','S','S'];
+  const max = Math.max(...data);
+  const w = canvas.width, h = canvas.height;
+  const pad = { l: 8, r: 8, t: 8, b: 20 };
+  const bw = (w - pad.l - pad.r) / data.length;
+
+  ctx.clearRect(0, 0, w, h);
+
+  data.forEach((val, i) => {
+    const bh = val ? ((val / max) * (h - pad.t - pad.b)) : 2;
+    const x = pad.l + i * bw + bw * 0.15;
+    const y = h - pad.b - bh;
+
+    const grad = ctx.createLinearGradient(0, y, 0, h - pad.b);
+    grad.addColorStop(0, '#6c63ff');
+    grad.addColorStop(1, '#6c63ff44');
+    ctx.fillStyle = i === 6 ? '#2e3250' : grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, bw * 0.7, bh, [3, 3, 0, 0]);
+    ctx.fill();
+
+    ctx.fillStyle = '#7a7f9a';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(days[i], x + bw * 0.35, h - 5);
+  });
+}
+
+// ── Nav & Tabs ──
+function switchNav(btn, view) {
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function switchTab(tab, id) {
+  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  ['today','generate','exercises'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === id ? '' : 'none';
+  });
+}
+
+function toggleMuscle(btn) { btn.classList.toggle('selected'); }
+
+// ── Add Exercise ──
+function addExercise() {
+  const name = prompt('Exercise name:');
+  if (!name) return;
+  const idx = state.sets.length;
+  state.sets.push([{w:0, r:8, done:false}]);
+  previousData.push(['—']);
+
+  const list = document.getElementById('exerciseList');
+  const card = document.createElement('div');
+  card.className = 'exercise-card';
+  card.id = `ex-${idx}`;
+  card.innerHTML = `
+    <div class="exercise-top">
+      <span class="exercise-name">${name}</span>
+      <span class="exercise-badge">Custom</span>
+    </div>
+    <table class="sets-table">
+      <thead><tr><th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th></tr></thead>
+      <tbody id="sets-${idx}"></tbody>
+    </table>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(${idx})">+ Set</button>
+  `;
+  list.appendChild(card);
+  renderSet(idx, 0);
+  countTotals();
+  updateStats();
+}
+
+// ── Finish ──
+function finishWorkout() {
+  const done = state.sets.flat().filter(s => s.done).length;
+  const vol = state.sets.flat().filter(s => s.done).reduce((a,s) => a + s.w*s.r, 0);
+  alert(`Workout complete!\n\nSets finished: ${done}/${state.totalSets}\nTotal volume: ${vol.toLocaleString()} lbs\n\nGreat work!`);
+}
+
+// ── AI Chat ──
+const aiResponses = {
+  'form check': 'For bench press: keep shoulder blades retracted and depressed, slight arch in lower back, bar touches mid-chest. For OHP: brace your core hard, tuck the bar slightly behind the head at lockout. Want a specific exercise breakdown?',
+  'increase weight': "Based on your volume today, you're ready to bump bench press up 5 lbs next session. Stick to the same weight on OHP until you hit all reps cleanly.",
+  'feeling tired': "Consider cutting the last isolation set and adding 5 minutes rest between compounds. Are you sleeping 7-9 hours? Fatigue is often a recovery signal, not a training one.",
+  'substitute exercise': "I can swap exercises for you! What muscle group and what equipment do you have available? For example, no cable? I can replace tricep pushdowns with skull crushers or close-grip bench.",
+};
+
+function quickPrompt(el) {
+  document.getElementById('chatInput').value = el.textContent;
+  sendMessage();
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage(text, 'user');
+  input.value = '';
+
+  setTimeout(() => {
+    const lower = text.toLowerCase();
+    let reply = "Great question! I'm here to help you optimize every set. Could you give me a bit more detail so I can tailor my advice?";
+    for (const [key, val] of Object.entries(aiResponses)) {
+      if (lower.includes(key.split(' ')[0])) { reply = val; break; }
+    }
+    appendMessage(reply, 'ai');
+  }, 600);
+}
+
+function appendMessage(text, role) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  const now = new Date().toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'});
+  div.innerHTML = `${text}<div class="message-time">${now}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── Generate Program (placeholder) ──
+function generateProgram() {
+  const goal = document.getElementById('gen-goal').value;
+  const days = document.getElementById('gen-days').value;
+  const level = document.getElementById('gen-level').value;
+  appendMessage(`Generate a ${level} ${goal} program training ${days}.`, 'user');
+  switchTab(document.querySelector('.panel-tab'), 'today');
+  document.querySelectorAll('.panel-tab')[0].classList.add('active');
+  setTimeout(() => {
+    appendMessage(`I've noted your goal: ${goal} at ${level} level, ${days}. In the next step I'll wire this to the real AI API and generate your full periodized program with progressive overload built in. Stay tuned!`, 'ai');
+  }, 700);
+}
+
+init();
+</script>
+</body>
+</html>
