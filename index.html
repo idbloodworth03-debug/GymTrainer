@@ -1,951 +1,1227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Weight Room Trainer</title>
-  <style>
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --card: #22263a;
-      --accent: #6c63ff;
-      --accent2: #ff6584;
-      --text: #e8eaf0;
-      --muted: #7a7f9a;
-      --success: #4caf89;
-      --warning: #f5a623;
-      --border: #2e3250;
-      --radius: 12px;
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AI Weight Room</title>
+<style>
+/* ── Reset & Tokens ── */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0f1117;--surface:#161920;--card:#1e2130;--card2:#252840;
+  --accent:#6c63ff;--accent2:#ff6584;--success:#3ecf8e;
+  --warning:#f5a623;--danger:#ef4444;--info:#38bdf8;
+  --text:#e8eaf0;--muted:#7a7f9a;--border:#2a2e45;
+  --radius:12px;--radius-sm:8px;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── Auth Screen ── */
+#authScreen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:radial-gradient(ellipse at 60% 30%,#1a1540 0%,var(--bg) 70%);
+}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:360px;text-align:center;}
+.auth-logo{font-size:2rem;font-weight:800;color:var(--accent);margin-bottom:4px;letter-spacing:-1px;}
+.auth-logo span{color:var(--accent2);}
+.auth-sub{color:var(--muted);font-size:0.88rem;margin-bottom:32px;}
+.auth-tabs{display:flex;background:var(--card);border-radius:10px;padding:4px;margin-bottom:24px;gap:4px;}
+.auth-tab{flex:1;padding:8px;border-radius:7px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.88rem;transition:.2s;}
+.auth-tab.active{background:var(--accent);color:#fff;font-weight:600;}
+.auth-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-size:0.9rem;margin-bottom:12px;outline:none;font-family:inherit;transition:.2s;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:.2s;margin-top:4px;}
+.auth-btn:hover{opacity:.88;transform:translateY(-1px);}
 
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+/* ── App Shell ── */
+#appShell{display:none;flex-direction:column;height:100vh;}
 
-    /* ── Header ── */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
+/* ── Top Bar ── */
+.topbar{
+  height:56px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;
+}
+.topbar-logo{font-size:1.1rem;font-weight:800;color:var(--accent);letter-spacing:-0.5px;white-space:nowrap;}
+.topbar-logo span{color:var(--accent2);}
+.topbar-tabs{display:flex;gap:2px;flex:1;}
+.topbar-tab{
+  padding:7px 18px;border-radius:8px;border:none;background:none;
+  color:var(--muted);cursor:pointer;font-size:0.88rem;font-weight:500;transition:.2s;white-space:nowrap;
+}
+.topbar-tab:hover{color:var(--text);background:var(--card);}
+.topbar-tab.active{color:#fff;background:var(--accent);font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.user-pill{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:0.82rem;color:var(--muted);}
+.user-pill strong{color:var(--text);}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;cursor:pointer;font-size:0.8rem;transition:.2s;}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);}
 
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: -0.5px;
-    }
-    .logo span { color: var(--accent2); }
+/* ── Tab Panels ── */
+.tab-panel{flex:1;overflow:hidden;display:none;}
+.tab-panel.active{display:flex;}
 
-    nav { display: flex; gap: 8px; }
+/* ═══════════════════════════════
+   TAB 1 — MY PLAN
+═══════════════════════════════ */
+#tab-plan{flex-direction:row;}
 
-    nav button {
-      background: none;
-      border: none;
-      color: var(--muted);
-      padding: 6px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-    }
-    nav button:hover, nav button.active {
-      background: var(--card);
-      color: var(--text);
-    }
-    nav button.active { color: var(--accent); font-weight: 600; }
+.plan-sidebar{
+  width:260px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+  overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;
+}
+.plan-day-thumb{
+  background:var(--card);border:1.5px solid var(--border);border-radius:10px;
+  padding:10px 12px;cursor:pointer;transition:.2s;
+}
+.plan-day-thumb:hover{border-color:var(--accent);}
+.plan-day-thumb.selected{border-color:var(--accent);background:var(--card2);}
+.plan-day-thumb.today-thumb{border-color:var(--info);}
+.pdt-top{display:flex;justify-content:space-between;align-items:center;}
+.pdt-date{font-size:0.75rem;color:var(--muted);}
+.pdt-badge{font-size:0.65rem;padding:2px 7px;border-radius:20px;font-weight:700;text-transform:uppercase;}
+.badge-upcoming{background:#6c63ff22;color:var(--accent);}
+.badge-complete{background:#3ecf8e22;color:var(--success);}
+.badge-missed{background:#ef444422;color:var(--danger);}
+.badge-rest{background:#2a2e4566;color:var(--muted);}
+.badge-modified{background:#f5a62322;color:var(--warning);}
+.pdt-title{font-size:0.85rem;font-weight:600;margin-top:4px;}
+.pdt-type{font-size:0.72rem;color:var(--muted);margin-top:2px;}
 
-    /* ── Layout ── */
-    main {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 260px 1fr 300px;
-      gap: 0;
-      height: calc(100vh - 60px);
-      overflow: hidden;
-    }
+.plan-main{flex:1;overflow-y:auto;padding:24px;}
 
-    /* ── Sidebar ── */
-    .sidebar {
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 20px 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+.day-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;max-width:820px;margin:0 auto;}
+.day-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.day-card-meta{}
+.day-card-date{font-size:0.82rem;color:var(--muted);margin-bottom:4px;}
+.day-card-title{font-size:1.4rem;font-weight:700;}
+.day-card-goal{font-size:0.88rem;color:var(--muted);margin-top:4px;}
+.day-card-status{display:flex;align-items:center;gap:8px;}
+.status-chip{font-size:0.78rem;padding:4px 12px;border-radius:20px;font-weight:700;text-transform:uppercase;}
 
-    .sidebar-section h3 {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
+.type-pill{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.78rem;font-weight:600;margin-bottom:16px;}
+.type-dot{width:8px;height:8px;border-radius:50%;}
 
-    .muscle-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
+.exercise-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
+.exercise-table th{font-size:0.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+.exercise-table td{padding:10px 10px;border-bottom:1px solid var(--border)22;font-size:0.88rem;vertical-align:middle;}
+.exercise-table tr:last-child td{border-bottom:none;}
+.exercise-table tr:hover td{background:var(--card2);}
+.ex-name{font-weight:600;}
+.ex-note{font-size:0.75rem;color:var(--muted);margin-top:2px;}
+.weight-pill{background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:0.8rem;font-weight:600;font-variant-numeric:tabular-nums;}
+.rest-val{color:var(--muted);font-size:0.82rem;}
 
-    .muscle-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 6px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .muscle-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .muscle-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.coach-notes{background:var(--card2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:18px;}
+.coach-notes-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);font-weight:700;margin-bottom:4px;}
+.coach-notes-text{font-size:0.88rem;color:var(--text);line-height:1.5;}
 
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      background: var(--card);
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    .stat-row .label { font-size: 0.82rem; color: var(--muted); }
-    .stat-row .value { font-size: 0.9rem; font-weight: 600; }
+.day-actions{display:flex;flex-wrap:wrap;gap:8px;}
 
-    /* ── Center Panel ── */
-    .center {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+.rest-day-card{text-align:center;padding:48px 20px;}
+.rest-icon{font-size:3rem;margin-bottom:12px;}
+.rest-title{font-size:1.2rem;font-weight:700;margin-bottom:8px;}
+.rest-text{color:var(--muted);font-size:0.9rem;}
 
-    .panel-tabs {
-      display: flex;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 20px;
-    }
-    .panel-tab {
-      padding: 14px 20px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      color: var(--muted);
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-    .panel-tab:hover { color: var(--text); }
-    .panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.modified-banner{background:#f5a62311;border:1px solid var(--warning)44;border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;font-size:0.82rem;}
+.modified-banner span{color:var(--warning);}
 
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-    }
+/* ═══════════════════════════════
+   TAB 2 — CALENDAR
+═══════════════════════════════ */
+#tab-calendar{flex-direction:row;}
+.cal-main{flex:1;overflow-y:auto;padding:24px;}
+.cal-detail{width:300px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;}
 
-    /* ── Workout Card ── */
-    .workout-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 24px;
-    }
-    .workout-title h2 { font-size: 1.4rem; margin-bottom: 4px; }
-    .workout-title p { color: var(--muted); font-size: 0.88rem; }
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.cal-nav{display:flex;align-items:center;gap:12px;}
+.cal-nav-btn{background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 12px;cursor:pointer;font-size:0.9rem;transition:.2s;}
+.cal-nav-btn:hover{border-color:var(--accent);}
+.cal-month-label{font-size:1.1rem;font-weight:700;min-width:160px;text-align:center;}
+.cal-view-toggle{display:flex;gap:4px;background:var(--card);border-radius:8px;padding:4px;}
+.cal-view-btn{padding:5px 14px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.82rem;transition:.2s;}
+.cal-view-btn.active{background:var(--accent);color:#fff;font-weight:600;}
 
-    .btn {
-      padding: 10px 20px;
-      border-radius: var(--radius);
-      border: none;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { border-color: var(--accent); }
-    .btn-success { background: var(--success); color: #fff; }
-    .btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+.cal-legend{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--muted);}
+.legend-dot{width:10px;height:10px;border-radius:3px;}
 
-    .exercise-list { display: flex; flex-direction: column; gap: 12px; }
+/* Monthly Grid */
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-weekday{font-size:0.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:center;padding:8px 0;}
+.cal-cell{
+  aspect-ratio:1;background:var(--card);border:1.5px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:.2s;position:relative;padding:4px;
+}
+.cal-cell:hover{border-color:var(--accent);transform:scale(1.03);}
+.cal-cell.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)44;}
+.cal-cell.other-month{opacity:.35;}
+.cal-cell.today-cell{border-color:var(--info);}
+.cal-date-num{font-size:0.82rem;font-weight:600;}
+.cal-cell-dot{width:6px;height:6px;border-radius:50%;margin-top:3px;}
+.cal-cell-label{font-size:0.58rem;text-align:center;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
 
-    .exercise-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      transition: border-color 0.2s;
-    }
-    .exercise-card:hover { border-color: var(--accent); }
-    .exercise-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent)20; }
+/* Status colors */
+.status-complete{background:var(--success)22;border-color:var(--success)66;}
+.status-complete .cal-date-num{color:var(--success);}
+.status-complete .cal-cell-dot{background:var(--success);}
+.status-upcoming{background:var(--card);}
+.status-upcoming .cal-cell-dot{background:var(--accent);}
+.status-rest{background:var(--card);opacity:.7;}
+.status-rest .cal-cell-dot{background:var(--muted);}
+.status-missed{background:#ef444411;border-color:#ef444444;}
+.status-missed .cal-date-num{color:var(--danger);}
+.status-missed .cal-cell-dot{background:var(--danger);}
+.status-modified{background:#f5a62311;border-color:#f5a62344;}
+.status-modified .cal-cell-dot{background:var(--warning);}
 
-    .exercise-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .exercise-name { font-weight: 600; font-size: 1rem; }
-    .exercise-badge {
-      font-size: 0.72rem;
-      padding: 3px 8px;
-      border-radius: 20px;
-      background: var(--accent)22;
-      color: var(--accent);
-      font-weight: 600;
-    }
+/* Weekly view */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+.week-cell{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 8px;cursor:pointer;transition:.2s;min-height:140px;}
+.week-cell:hover{border-color:var(--accent);}
+.week-cell.selected{border-color:var(--accent);}
+.week-day-name{font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;}
+.week-date{font-size:1.1rem;font-weight:700;margin-bottom:8px;}
+.week-workout-name{font-size:0.78rem;font-weight:600;margin-bottom:4px;line-height:1.3;}
+.week-type-chip{font-size:0.65rem;padding:2px 7px;border-radius:20px;font-weight:700;display:inline-block;}
 
-    .sets-table { width: 100%; border-collapse: collapse; }
-    .sets-table th {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      text-align: left;
-      padding: 4px 8px;
-    }
-    .sets-table td { padding: 6px 8px; }
+/* Calendar detail panel */
+.detail-date{font-size:0.82rem;color:var(--muted);margin-bottom:4px;}
+.detail-title{font-size:1.1rem;font-weight:700;margin-bottom:12px;}
+.detail-ex-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.detail-ex{background:var(--card);border-radius:8px;padding:8px 12px;font-size:0.82rem;}
+.detail-ex strong{display:block;margin-bottom:2px;}
+.detail-ex span{color:var(--muted);}
+.no-selection{color:var(--muted);font-size:0.88rem;text-align:center;padding:40px 16px;}
 
-    .set-input {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.9rem;
-      padding: 4px 8px;
-      width: 70px;
-      text-align: center;
-    }
-    .set-input:focus { outline: none; border-color: var(--accent); }
+/* ═══════════════════════════════
+   TAB 3 — COACH CHAT
+═══════════════════════════════ */
+#tab-chat{flex-direction:column;}
+.chat-shell{display:flex;flex:1;overflow:hidden;}
 
-    .set-check {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid var(--border);
-      cursor: pointer;
-      background: none;
-      transition: all 0.2s;
-    }
-    .set-check.done { background: var(--success); border-color: var(--success); }
+.chat-history{
+  width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+  padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+}
+.chat-history-title{font-size:0.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px;}
+.history-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:.2s;}
+.history-item:hover{border-color:var(--accent);}
+.history-item .h-date{font-size:0.7rem;color:var(--muted);}
+.history-item .h-preview{font-size:0.78rem;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.change-log-item{background:var(--card2);border:1px solid var(--warning)33;border-radius:8px;padding:8px 10px;}
+.change-log-item .h-date{font-size:0.68rem;color:var(--warning);}
+.change-log-item .h-preview{font-size:0.75rem;color:var(--muted);margin-top:2px;}
 
-    /* ── AI Chat Panel ── */
-    .ai-panel {
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-    }
+.chat-main{flex:1;display:flex;flex-direction:column;}
+.chat-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.coach-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.coach-name{font-weight:700;font-size:0.95rem;}
+.coach-status{font-size:0.75rem;color:var(--success);}
+.coach-desc{font-size:0.78rem;color:var(--muted);margin-left:auto;max-width:340px;text-align:right;line-height:1.4;}
 
-    .ai-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .ai-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-    }
-    .ai-name { font-weight: 600; font-size: 0.95rem; }
-    .ai-status { font-size: 0.75rem; color: var(--success); }
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;}
+.msg{display:flex;gap:10px;max-width:75%;}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.msg-avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;margin-top:2px;}
+.msg-avatar.ai-av{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+.msg-avatar.user-av{background:var(--card2);border:1px solid var(--border);}
+.msg-bubble{background:var(--card);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:10px 14px;font-size:0.88rem;line-height:1.55;}
+.msg.user .msg-bubble{background:var(--accent);border-color:var(--accent);color:#fff;border-radius:14px 4px 14px 14px;}
+.msg-time{font-size:0.68rem;color:var(--muted);margin-top:4px;text-align:right;}
+.msg.user .msg-time{text-align:left;}
 
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+/* Confirmation card inside chat */
+.confirm-card{background:var(--card2);border:1px solid var(--warning)55;border-radius:12px;padding:14px;margin-top:8px;}
+.confirm-title{font-size:0.8rem;color:var(--warning);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.confirm-diff{background:var(--surface);border-radius:8px;padding:10px;margin-bottom:10px;font-size:0.82rem;line-height:1.6;}
+.confirm-diff .removed{color:var(--danger);text-decoration:line-through;}
+.confirm-diff .added{color:var(--success);}
+.confirm-btns{display:flex;gap:8px;}
 
-    .message {
-      max-width: 85%;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 0.88rem;
-      line-height: 1.5;
-    }
-    .message.ai {
-      background: var(--card);
-      border: 1px solid var(--border);
-      align-self: flex-start;
-      border-radius: 4px 12px 12px 12px;
-    }
-    .message.user {
-      background: var(--accent);
-      color: #fff;
-      align-self: flex-end;
-      border-radius: 12px 4px 12px 12px;
-    }
-    .message-time { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+.quick-prompts{padding:8px 20px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;border-top:1px solid var(--border);}
+.quick-prompts::-webkit-scrollbar{height:0;}
+.qp{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:20px;font-size:0.78rem;cursor:pointer;white-space:nowrap;transition:.2s;flex-shrink:0;}
+.qp:hover{border-color:var(--accent);color:var(--accent);}
 
-    .quick-prompts {
-      padding: 8px 16px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .quick-prompt {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .quick-prompt:hover { border-color: var(--accent); color: var(--accent); }
+.chat-input-row{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.chat-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:10px 14px;font-size:0.88rem;resize:none;outline:none;font-family:inherit;max-height:120px;}
+.chat-input:focus{border-color:var(--accent);}
+.send-btn{background:var(--accent);border:none;border-radius:12px;width:42px;color:#fff;cursor:pointer;font-size:1.1rem;flex-shrink:0;transition:.2s;}
+.send-btn:hover{opacity:.85;}
 
-    .chat-input-area {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-    }
-    .chat-input {
-      flex: 1;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      padding: 8px 12px;
-      font-size: 0.88rem;
-      resize: none;
-      outline: none;
-      font-family: inherit;
-    }
-    .chat-input:focus { border-color: var(--accent); }
-    .send-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: 10px;
-      width: 40px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 1.1rem;
-      transition: opacity 0.2s;
-    }
-    .send-btn:hover { opacity: 0.85; }
+/* ── Shared Buttons ── */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:0.82rem;font-weight:600;transition:.2s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{opacity:.88;}
+.btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{opacity:.88;}
+.btn-danger{background:var(--danger)22;color:var(--danger);border:1px solid var(--danger)44;}
+.btn-danger:hover{background:var(--danger)33;}
+.btn-warning{background:var(--warning)22;color:var(--warning);border:1px solid var(--warning)44;}
+.btn-sm{padding:5px 12px;font-size:0.78rem;}
 
-    /* ── Progress Rings ── */
-    .progress-ring-container {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .ring-card {
-      flex: 1;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-      text-align: center;
-    }
-    .ring-card svg { display: block; margin: 0 auto 8px; }
-    .ring-card .ring-label { font-size: 0.75rem; color: var(--muted); }
-    .ring-card .ring-value { font-size: 1.1rem; font-weight: 700; }
+/* ── Scrollbars ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 
-    /* ── Timer ── */
-    .rest-timer {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      text-align: center;
-      margin-bottom: 20px;
-      display: none;
-    }
-    .rest-timer.visible { display: block; }
-    .timer-display {
-      font-size: 2.4rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      color: var(--accent);
-      margin: 8px 0;
-    }
-    .timer-label { font-size: 0.8rem; color: var(--muted); }
-
-    /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-
-    /* ── Responsive ── */
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-      .sidebar, .ai-panel { display: none; }
-    }
-  </style>
+/* ── Type colors ── */
+.type-strength{color:#6c63ff;}.dot-strength{background:#6c63ff;}
+.type-hypertrophy{color:#ff6584;}.dot-hypertrophy{background:#ff6584;}
+.type-conditioning{color:#f5a623;}.dot-conditioning{background:#f5a623;}
+.type-mobility{color:#38bdf8;}.dot-mobility{background:#38bdf8;}
+.type-recovery{color:#3ecf8e;}.dot-recovery{background:#3ecf8e;}
+.type-rest{color:#7a7f9a;}.dot-rest{background:#7a7f9a;}
+</style>
 </head>
 <body>
 
-<header>
-  <div class="logo">AI<span>Lift</span></div>
-  <nav>
-    <button class="active" onclick="switchNav(this,'workout')">Workout</button>
-    <button onclick="switchNav(this,'program')">Program</button>
-    <button onclick="switchNav(this,'history')">History</button>
-    <button onclick="switchNav(this,'profile')">Profile</button>
-  </nav>
-</header>
-
-<main>
-
-  <!-- ── Left Sidebar ── -->
-  <aside class="sidebar">
-    <div class="sidebar-section">
-      <h3>Target Muscles</h3>
-      <div class="muscle-grid">
-        <button class="muscle-btn selected" onclick="toggleMuscle(this)">Chest</button>
-        <button class="muscle-btn selected" onclick="toggleMuscle(this)">Triceps</button>
-        <button class="muscle-btn" onclick="toggleMuscle(this)">Back</button>
-        <button class="muscle-btn" onclick="toggleMuscle(this)">Biceps</button>
-        <button class="muscle-btn" onclick="toggleMuscle(this)">Shoulders</button>
-        <button class="muscle-btn" onclick="toggleMuscle(this)">Legs</button>
-        <button class="muscle-btn" onclick="toggleMuscle(this)">Core</button>
-        <button class="muscle-btn" onclick="toggleMuscle(this)">Glutes</button>
-      </div>
+<!-- ══════════════ AUTH SCREEN ══════════════ -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">AI<span>Lift</span></div>
+    <div class="auth-sub">Your AI-powered weight room coach</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authSwitch('login',this)">Sign In</button>
+      <button class="auth-tab" onclick="authSwitch('signup',this)">Sign Up</button>
     </div>
-
-    <div class="sidebar-section">
-      <h3>Today's Stats</h3>
-      <div class="stat-row">
-        <span class="label">Volume</span>
-        <span class="value" id="stat-volume">0 lbs</span>
-      </div>
-      <div class="stat-row">
-        <span class="label">Sets Done</span>
-        <span class="value" id="stat-sets">0 / 12</span>
-      </div>
-      <div class="stat-row">
-        <span class="label">Duration</span>
-        <span class="value" id="stat-duration">00:00</span>
-      </div>
-      <div class="stat-row">
-        <span class="label">Est. Calories</span>
-        <span class="value" id="stat-cals">0 kcal</span>
-      </div>
+    <div id="authForm">
+      <input class="auth-input" id="authName" type="text" placeholder="Name" style="display:none;"/>
+      <input class="auth-input" id="authEmail" type="email" placeholder="Email address"/>
+      <input class="auth-input" id="authPass" type="password" placeholder="Password"/>
+      <button class="auth-btn" onclick="handleAuth()">Sign In</button>
     </div>
+  </div>
+</div>
 
-    <div class="sidebar-section">
-      <h3>Weekly Volume</h3>
-      <canvas id="volumeChart" width="228" height="80" style="border-radius:8px;"></canvas>
+<!-- ══════════════ APP SHELL ══════════════ -->
+<div id="appShell">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-logo">AI<span>Lift</span></div>
+    <div class="topbar-tabs">
+      <button class="topbar-tab active" onclick="switchTab('plan',this)">My Plan</button>
+      <button class="topbar-tab" onclick="switchTab('calendar',this)">Calendar</button>
+      <button class="topbar-tab" onclick="switchTab('chat',this)">Coach Chat</button>
     </div>
-
-    <div style="margin-top:auto;">
-      <button class="btn btn-success" style="width:100%;" onclick="finishWorkout()">Finish Workout</button>
-    </div>
-  </aside>
-
-  <!-- ── Center Panel ── -->
-  <div class="center">
-    <div class="panel-tabs">
-      <div class="panel-tab active" onclick="switchTab(this,'today')">Today</div>
-      <div class="panel-tab" onclick="switchTab(this,'generate')">Generate Plan</div>
-      <div class="panel-tab" onclick="switchTab(this,'exercises')">Exercise Library</div>
-    </div>
-
-    <div class="panel-content" id="tab-today">
-
-      <div class="workout-header">
-        <div class="workout-title">
-          <h2>Push Day A</h2>
-          <p id="workout-date"></p>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-secondary btn-sm" onclick="startTimer(90)">Rest Timer</button>
-          <button class="btn btn-primary btn-sm" onclick="addExercise()">+ Add Exercise</button>
-        </div>
-      </div>
-
-      <!-- Rest Timer -->
-      <div class="rest-timer" id="restTimer">
-        <div class="timer-label">REST</div>
-        <div class="timer-display" id="timerDisplay">1:30</div>
-        <button class="btn btn-secondary btn-sm" onclick="stopTimer()">Skip</button>
-      </div>
-
-      <!-- Progress rings -->
-      <div class="progress-ring-container">
-        <div class="ring-card">
-          <svg width="60" height="60">
-            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
-            <circle id="ring1" cx="30" cy="30" r="24" fill="none" stroke="var(--accent)" stroke-width="5"
-              stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"
-              transform="rotate(-90 30 30)" style="transition:stroke-dashoffset 0.6s ease"/>
-          </svg>
-          <div class="ring-value" id="ring1-val">0%</div>
-          <div class="ring-label">Completed</div>
-        </div>
-        <div class="ring-card">
-          <svg width="60" height="60">
-            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
-            <circle id="ring2" cx="30" cy="30" r="24" fill="none" stroke="var(--accent2)" stroke-width="5"
-              stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"
-              transform="rotate(-90 30 30)" style="transition:stroke-dashoffset 0.6s ease"/>
-          </svg>
-          <div class="ring-value" id="ring2-val">0 lbs</div>
-          <div class="ring-label">Volume</div>
-        </div>
-        <div class="ring-card">
-          <svg width="60" height="60">
-            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
-            <circle id="ring3" cx="30" cy="30" r="24" fill="none" stroke="var(--success)" stroke-width="5"
-              stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"
-              transform="rotate(-90 30 30)" style="transition:stroke-dashoffset 0.6s ease"/>
-          </svg>
-          <div class="ring-value" id="ring3-val">0 kcal</div>
-          <div class="ring-label">Calories</div>
-        </div>
-      </div>
-
-      <!-- Exercise list -->
-      <div class="exercise-list" id="exerciseList">
-
-        <div class="exercise-card" id="ex-0">
-          <div class="exercise-top">
-            <span class="exercise-name">Bench Press</span>
-            <span class="exercise-badge">Compound</span>
-          </div>
-          <table class="sets-table">
-            <thead>
-              <tr>
-                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
-              </tr>
-            </thead>
-            <tbody id="sets-0"></tbody>
-          </table>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(0)">+ Set</button>
-        </div>
-
-        <div class="exercise-card" id="ex-1">
-          <div class="exercise-top">
-            <span class="exercise-name">Incline Dumbbell Press</span>
-            <span class="exercise-badge">Compound</span>
-          </div>
-          <table class="sets-table">
-            <thead>
-              <tr>
-                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
-              </tr>
-            </thead>
-            <tbody id="sets-1"></tbody>
-          </table>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(1)">+ Set</button>
-        </div>
-
-        <div class="exercise-card" id="ex-2">
-          <div class="exercise-top">
-            <span class="exercise-name">Overhead Press</span>
-            <span class="exercise-badge">Compound</span>
-          </div>
-          <table class="sets-table">
-            <thead>
-              <tr>
-                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
-              </tr>
-            </thead>
-            <tbody id="sets-2"></tbody>
-          </table>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(2)">+ Set</button>
-        </div>
-
-        <div class="exercise-card" id="ex-3">
-          <div class="exercise-top">
-            <span class="exercise-name">Tricep Pushdown</span>
-            <span class="exercise-badge">Isolation</span>
-          </div>
-          <table class="sets-table">
-            <thead>
-              <tr>
-                <th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th>
-              </tr>
-            </thead>
-            <tbody id="sets-3"></tbody>
-          </table>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(3)">+ Set</button>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Generate Plan Tab (placeholder) -->
-    <div class="panel-content" id="tab-generate" style="display:none;">
-      <h2 style="margin-bottom:12px;">Generate AI Program</h2>
-      <p style="color:var(--muted);margin-bottom:24px;">Tell the AI coach your goals and it will build a custom program for you.</p>
-      <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;">
-        <select class="set-input" style="width:100%;padding:10px 14px;" id="gen-goal">
-          <option>Strength & Power</option>
-          <option>Muscle Hypertrophy</option>
-          <option>Fat Loss + Tone</option>
-          <option>Athletic Performance</option>
-          <option>General Fitness</option>
-        </select>
-        <select class="set-input" style="width:100%;padding:10px 14px;" id="gen-days">
-          <option>3 days / week</option>
-          <option>4 days / week</option>
-          <option>5 days / week</option>
-          <option>6 days / week</option>
-        </select>
-        <select class="set-input" style="width:100%;padding:10px 14px;" id="gen-level">
-          <option>Beginner</option>
-          <option>Intermediate</option>
-          <option>Advanced</option>
-        </select>
-        <button class="btn btn-primary" onclick="generateProgram()">Generate Program with AI</button>
-      </div>
-    </div>
-
-    <!-- Exercise Library Tab (placeholder) -->
-    <div class="panel-content" id="tab-exercises" style="display:none;">
-      <h2 style="margin-bottom:12px;">Exercise Library</h2>
-      <p style="color:var(--muted);">Browse and search exercises — coming up in the next step.</p>
+    <div class="topbar-right">
+      <div class="user-pill">Athlete: <strong id="userName">—</strong></div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </div>
 
-  <!-- ── AI Chat Panel ── -->
-  <aside class="ai-panel">
-    <div class="ai-header">
-      <div class="ai-avatar">🤖</div>
-      <div>
-        <div class="ai-name">Coach AI</div>
-        <div class="ai-status">● Online</div>
+  <!-- ══ TAB 1: MY PLAN ══ -->
+  <div id="tab-plan" class="tab-panel active">
+
+    <div class="plan-sidebar" id="planSidebar"><!-- filled by JS --></div>
+
+    <div class="plan-main" id="planMain"><!-- filled by JS --></div>
+
+  </div>
+
+  <!-- ══ TAB 2: CALENDAR ══ -->
+  <div id="tab-calendar" class="tab-panel">
+    <div class="cal-main">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calNav(-1)">&#8592;</button>
+          <div class="cal-month-label" id="calLabel">May 2026</div>
+          <button class="cal-nav-btn" onclick="calNav(1)">&#8594;</button>
+        </div>
+        <div class="cal-view-toggle">
+          <button class="cal-view-btn active" onclick="setCalView('month',this)">Month</button>
+          <button class="cal-view-btn" onclick="setCalView('week',this)">Week</button>
+        </div>
       </div>
-    </div>
 
-    <div class="chat-messages" id="chatMessages">
-      <div class="message ai">
-        Hey! I'm your AI weight room coach. I can help you with form tips, suggest weight progressions, adjust your program, and answer any training questions. What do you need?
-        <div class="message-time">Now</div>
+      <div class="cal-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--success);"></div>Completed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Upcoming</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--muted);"></div>Rest</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--danger);"></div>Missed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warning);"></div>Modified</div>
       </div>
+
+      <div id="calGrid"><!-- filled by JS --></div>
     </div>
 
-    <div class="quick-prompts">
-      <span class="quick-prompt" onclick="quickPrompt(this)">Form check</span>
-      <span class="quick-prompt" onclick="quickPrompt(this)">Increase weight?</span>
-      <span class="quick-prompt" onclick="quickPrompt(this)">Feeling tired</span>
-      <span class="quick-prompt" onclick="quickPrompt(this)">Substitute exercise</span>
+    <div class="cal-detail" id="calDetail">
+      <div class="no-selection">Click a day to see workout details.</div>
     </div>
+  </div>
 
-    <div class="chat-input-area">
-      <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask Coach AI..."
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-      <button class="send-btn" onclick="sendMessage()">&#9658;</button>
+  <!-- ══ TAB 3: COACH CHAT ══ -->
+  <div id="tab-chat" class="tab-panel">
+    <div class="chat-shell">
+
+      <div class="chat-history">
+        <div class="chat-history-title">Recent</div>
+        <div id="changeLogList"><!-- filled by JS --></div>
+      </div>
+
+      <div class="chat-main">
+        <div class="chat-header">
+          <div class="coach-avatar">🤖</div>
+          <div>
+            <div class="coach-name">Coach AI</div>
+            <div class="coach-status">● Online</div>
+          </div>
+          <div class="coach-desc">I can modify your workouts, answer training questions, and adjust your plan — just ask.</div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg">
+            <div class="msg-avatar ai-av">🤖</div>
+            <div>
+              <div class="msg-bubble">Hey! I'm your AI weight room coach. I can read your plan, suggest modifications, and update workouts after you approve. What do you need today?</div>
+              <div class="msg-time">Now</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-prompts">
+          <span class="qp" onclick="useQuick(this)">I missed yesterday's workout</span>
+          <span class="qp" onclick="useQuick(this)">My legs are sore</span>
+          <span class="qp" onclick="useQuick(this)">I only have 30 minutes today</span>
+          <span class="qp" onclick="useQuick(this)">Make today easier</span>
+          <span class="qp" onclick="useQuick(this)">Swap squats for something else</span>
+          <span class="qp" onclick="useQuick(this)">Move today's workout to tomorrow</span>
+          <span class="qp" onclick="useQuick(this)">Why is this workout programmed?</span>
+        </div>
+
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask Coach AI about your plan..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+          <button class="send-btn" onclick="sendChat()">&#9658;</button>
+        </div>
+      </div>
+
     </div>
-  </aside>
+  </div>
 
-</main>
+</div>
 
 <script>
-// ── Data ──
-const previousData = [
-  ['135 × 8', '135 × 8', '135 × 8'],
-  ['50 × 10', '50 × 10', '50 × 10'],
-  ['95 × 8', '95 × 8', '95 × 8'],
-  ['55 × 12', '55 × 12', '55 × 12'],
+// ══════════════════════════════════════════════════
+// DATA — Sample 4-Week Plan  (today = 2026-05-14)
+// ══════════════════════════════════════════════════
+
+const TODAY_STR = '2026-05-14';
+
+function makeDate(offset) {
+  const d = new Date('2026-05-14');
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0,10);
+}
+
+let workoutPlan = [
+  // ── WEEK 1 (past days already done/missed) ──
+  {
+    date: makeDate(-4), title:'Upper Body Strength', type:'strength', status:'complete',
+    modified_by_ai:false, goal:'Heavy pressing and pulling',
+    coach_notes:'Great session. Keep bar path consistent on bench.',
+    exercises:[
+      {name:'Bench Press', sets:4, reps:5, weight_type:'percentage', weight_value:'80%', rest_time:'2-3 min', notes:'Drive feet into floor.'},
+      {name:'Pull-Ups', sets:4, reps:8, weight_type:'bodyweight', weight_value:'BW', rest_time:'90 sec', notes:'Full ROM, dead hang each rep.'},
+      {name:'Shoulder Press', sets:3, reps:8, weight_type:'percentage', weight_value:'70%', rest_time:'90 sec', notes:'Elbows slightly forward.'},
+      {name:'Face Pulls', sets:3, reps:15, weight_type:'weight', weight_value:'40 lbs', rest_time:'60 sec', notes:'Rear delt focus.'},
+    ]
+  },
+  {
+    date: makeDate(-3), title:'Lower Body Strength', type:'strength', status:'complete',
+    modified_by_ai:false, goal:'Heavy squat and hinge',
+    coach_notes:'Hit all working sets. Add 5 lbs to squat next week.',
+    exercises:[
+      {name:'Back Squat', sets:4, reps:5, weight_type:'percentage', weight_value:'80%', rest_time:'3 min', notes:'Brace hard. Drive knees out.'},
+      {name:'Romanian Deadlift', sets:3, reps:8, weight_type:'percentage', weight_value:'65%', rest_time:'2 min', notes:'Feel the hamstring stretch.'},
+      {name:'Leg Press', sets:3, reps:10, weight_type:'weight', weight_value:'180 lbs', rest_time:'90 sec', notes:''},
+      {name:'Calf Raises', sets:4, reps:15, weight_type:'weight', weight_value:'100 lbs', rest_time:'60 sec', notes:''},
+    ]
+  },
+  {
+    date: makeDate(-2), title:'Rest Day', type:'rest', status:'rest',
+    modified_by_ai:false, goal:'', coach_notes:'Light walk or mobility work recommended.', exercises:[]
+  },
+  {
+    date: makeDate(-1), title:'Upper Body Hypertrophy', type:'hypertrophy', status:'missed',
+    modified_by_ai:false, goal:'Volume accumulation — chest and back',
+    coach_notes:'Focus on pump. Rest 60-90 sec only.',
+    exercises:[
+      {name:'Incline DB Press', sets:4, reps:10, weight_type:'weight', weight_value:'60 lbs', rest_time:'75 sec', notes:''},
+      {name:'Cable Row', sets:4, reps:12, weight_type:'weight', weight_value:'120 lbs', rest_time:'75 sec', notes:''},
+      {name:'Lateral Raises', sets:4, reps:15, weight_type:'weight', weight_value:'20 lbs', rest_time:'60 sec', notes:'Control the descent.'},
+      {name:'Tricep Pushdown', sets:3, reps:15, weight_type:'weight', weight_value:'55 lbs', rest_time:'60 sec', notes:''},
+      {name:'EZ-Bar Curl', sets:3, reps:12, weight_type:'weight', weight_value:'65 lbs', rest_time:'60 sec', notes:''},
+    ]
+  },
+  // ── TODAY ──
+  {
+    date: TODAY_STR, title:'Lower Body Hypertrophy', type:'hypertrophy', status:'upcoming',
+    modified_by_ai:false, goal:'Volume accumulation — quads, hamstrings, glutes',
+    coach_notes:'Keep rest under 90 sec to maximize metabolic stress. Do not max out.',
+    exercises:[
+      {name:'Back Squat', sets:4, reps:10, weight_type:'percentage', weight_value:'70%', rest_time:'90 sec', notes:'Same bar path as strength day.'},
+      {name:'Romanian Deadlift', sets:3, reps:12, weight_type:'percentage', weight_value:'60%', rest_time:'75 sec', notes:''},
+      {name:'Walking Lunges', sets:3, reps:12, weight_type:'weight', weight_value:'50 lbs', rest_time:'75 sec', notes:'Per leg.'},
+      {name:'Leg Curl', sets:3, reps:15, weight_type:'weight', weight_value:'90 lbs', rest_time:'60 sec', notes:''},
+      {name:'Goblet Squat', sets:2, reps:20, weight_type:'weight', weight_value:'35 lbs', rest_time:'60 sec', notes:'Finisher — go light, feel the quad.'},
+    ]
+  },
+  {
+    date: makeDate(1), title:'Conditioning', type:'conditioning', status:'upcoming',
+    modified_by_ai:false, goal:'Aerobic base and work capacity',
+    coach_notes:'Heart rate should stay 130-160 bpm. No heavy lifting today.',
+    exercises:[
+      {name:'Assault Bike', sets:1, reps:1, weight_type:'weight', weight_value:'20 min', rest_time:'—', notes:'Steady state, moderate pace.'},
+      {name:'Kettlebell Swings', sets:5, reps:15, weight_type:'weight', weight_value:'53 lbs', rest_time:'45 sec', notes:'Hip hinge, not squat.'},
+      {name:'Box Jumps', sets:4, reps:5, weight_type:'bodyweight', weight_value:'BW', rest_time:'60 sec', notes:'Land soft. Reset each rep.'},
+      {name:'Sled Push', sets:4, reps:1, weight_type:'weight', weight_value:'90 lbs', rest_time:'90 sec', notes:'20 meter sprints.'},
+    ]
+  },
+  {
+    date: makeDate(2), title:'Rest Day', type:'rest', status:'rest',
+    modified_by_ai:false, goal:'', coach_notes:'Sleep, nutrition, and recovery today.', exercises:[]
+  },
+  {
+    date: makeDate(3), title:'Full Body Strength', type:'strength', status:'upcoming',
+    modified_by_ai:false, goal:'Top-end strength across all patterns',
+    coach_notes:'Work up to a heavy set of 3 on squat and bench. No grinding misses.',
+    exercises:[
+      {name:'Back Squat', sets:3, reps:3, weight_type:'percentage', weight_value:'87%', rest_time:'3-4 min', notes:''},
+      {name:'Bench Press', sets:3, reps:3, weight_type:'percentage', weight_value:'87%', rest_time:'3-4 min', notes:''},
+      {name:'Trap Bar Deadlift', sets:3, reps:5, weight_type:'percentage', weight_value:'80%', rest_time:'3 min', notes:''},
+      {name:'Weighted Pull-Ups', sets:3, reps:5, weight_type:'weight', weight_value:'+25 lbs', rest_time:'2 min', notes:''},
+    ]
+  },
+  // ── WEEK 2 ──
+  {
+    date: makeDate(7), title:'Upper Body Strength', type:'strength', status:'upcoming',
+    modified_by_ai:false, goal:'Heavy pressing and pulling',
+    coach_notes:'Add 5 lbs to bench from last week.',
+    exercises:[
+      {name:'Bench Press', sets:4, reps:5, weight_type:'percentage', weight_value:'82%', rest_time:'2-3 min', notes:''},
+      {name:'Pull-Ups', sets:4, reps:8, weight_type:'bodyweight', weight_value:'BW', rest_time:'90 sec', notes:''},
+      {name:'Shoulder Press', sets:3, reps:8, weight_type:'percentage', weight_value:'72%', rest_time:'90 sec', notes:''},
+      {name:'Face Pulls', sets:3, reps:15, weight_type:'weight', weight_value:'45 lbs', rest_time:'60 sec', notes:''},
+    ]
+  },
+  {
+    date: makeDate(8), title:'Lower Body Strength', type:'strength', status:'upcoming',
+    modified_by_ai:false, goal:'Heavy squat and hinge',
+    coach_notes:'Squat up 5 lbs from last week.',
+    exercises:[
+      {name:'Back Squat', sets:4, reps:5, weight_type:'percentage', weight_value:'82%', rest_time:'3 min', notes:''},
+      {name:'Romanian Deadlift', sets:3, reps:8, weight_type:'percentage', weight_value:'67%', rest_time:'2 min', notes:''},
+      {name:'Leg Press', sets:3, reps:10, weight_type:'weight', weight_value:'185 lbs', rest_time:'90 sec', notes:''},
+      {name:'Calf Raises', sets:4, reps:15, weight_type:'weight', weight_value:'105 lbs', rest_time:'60 sec', notes:''},
+    ]
+  },
+  {
+    date: makeDate(9), title:'Rest Day', type:'rest', status:'rest',
+    modified_by_ai:false, goal:'', coach_notes:'Active recovery.', exercises:[]
+  },
+  {
+    date: makeDate(10), title:'Upper Body Hypertrophy', type:'hypertrophy', status:'upcoming',
+    modified_by_ai:false, goal:'Volume — chest and back',
+    coach_notes:'Add 1 set to each main exercise vs. last week.',
+    exercises:[
+      {name:'Incline DB Press', sets:5, reps:10, weight_type:'weight', weight_value:'62 lbs', rest_time:'75 sec', notes:''},
+      {name:'Cable Row', sets:5, reps:12, weight_type:'weight', weight_value:'125 lbs', rest_time:'75 sec', notes:''},
+      {name:'Lateral Raises', sets:4, reps:15, weight_type:'weight', weight_value:'20 lbs', rest_time:'60 sec', notes:''},
+      {name:'Tricep Pushdown', sets:3, reps:15, weight_type:'weight', weight_value:'57 lbs', rest_time:'60 sec', notes:''},
+      {name:'EZ-Bar Curl', sets:3, reps:12, weight_type:'weight', weight_value:'67 lbs', rest_time:'60 sec', notes:''},
+    ]
+  },
+  {
+    date: makeDate(11), title:'Mobility & Recovery', type:'mobility', status:'upcoming',
+    modified_by_ai:false, goal:'Joint prep and tissue quality',
+    coach_notes:'No heavy loading today. Focus on quality of movement.',
+    exercises:[
+      {name:'Hip 90/90 Stretch', sets:3, reps:1, weight_type:'weight', weight_value:'90 sec', rest_time:'—', notes:'Each side.'},
+      {name:'T-Spine Rotation', sets:2, reps:10, weight_type:'bodyweight', weight_value:'BW', rest_time:'—', notes:'Each side.'},
+      {name:'Band Pull-Aparts', sets:3, reps:20, weight_type:'weight', weight_value:'Light', rest_time:'—', notes:''},
+      {name:'Couch Stretch', sets:2, reps:1, weight_type:'bodyweight', weight_value:'60 sec', rest_time:'—', notes:'Each side.'},
+    ]
+  },
 ];
-const defaultSets = [
-  [{w:135,r:8},{w:135,r:8},{w:135,r:8}],
-  [{w:50,r:10},{w:50,r:10},{w:50,r:10}],
-  [{w:95,r:8},{w:95,r:8},{w:95,r:8}],
-  [{w:55,r:12},{w:55,r:12},{w:55,r:12}],
-];
 
-const state = {
-  sets: defaultSets.map(ex => ex.map(s => ({...s, done: false}))),
-  totalSets: 0,
-  doneSets: 0,
-  startTime: Date.now(),
-  timerInterval: null,
-  workoutInterval: null,
-};
+// ── App State ──
+let currentUser = null;
+let selectedDay = null;
+let calView = 'month';
+let calOffset = 0; // months offset for monthly, weeks for weekly
+let pendingChange = null;
+let changeLog = [];
 
-// ── Init ──
-document.getElementById('workout-date').textContent =
-  new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+// ══════════════════════════════
+// AUTH
+// ══════════════════════════════
+let authMode = 'login';
 
-function init() {
-  for (let i = 0; i < state.sets.length; i++) {
-    state.sets[i].forEach((_, si) => renderSet(i, si));
-  }
-  countTotals();
-  startWorkoutClock();
-  drawVolumeChart();
-}
-
-function renderSet(exIdx, setIdx) {
-  const tbody = document.getElementById(`sets-${exIdx}`);
-  const s = state.sets[exIdx][setIdx];
-  const prev = previousData[exIdx][setIdx] || '—';
-  const tr = document.createElement('tr');
-  tr.id = `row-${exIdx}-${setIdx}`;
-  tr.innerHTML = `
-    <td style="color:var(--muted);font-size:0.82rem;">${setIdx + 1}</td>
-    <td style="color:var(--muted);font-size:0.8rem;">${prev}</td>
-    <td><input class="set-input" type="number" value="${s.w}" min="0" step="5"
-      oninput="updateSet(${exIdx},${setIdx},'w',this.value)"></td>
-    <td><input class="set-input" type="number" value="${s.r}" min="1" step="1"
-      oninput="updateSet(${exIdx},${setIdx},'r',this.value)"></td>
-    <td><button class="set-check ${s.done?'done':''}" id="chk-${exIdx}-${setIdx}"
-      onclick="toggleSet(${exIdx},${setIdx})"></button></td>
-  `;
-  tbody.appendChild(tr);
-}
-
-function updateSet(exIdx, setIdx, field, val) {
-  state.sets[exIdx][setIdx][field] = parseFloat(val) || 0;
-  updateStats();
-}
-
-function toggleSet(exIdx, setIdx) {
-  const s = state.sets[exIdx][setIdx];
-  s.done = !s.done;
-  document.getElementById(`chk-${exIdx}-${setIdx}`).classList.toggle('done', s.done);
-  updateStats();
-  if (s.done) startTimer(90);
-}
-
-function addSet(exIdx) {
-  const last = state.sets[exIdx].slice(-1)[0] || {w:0,r:8};
-  const newIdx = state.sets[exIdx].length;
-  state.sets[exIdx].push({w: last.w, r: last.r, done: false});
-  previousData[exIdx].push('—');
-  renderSet(exIdx, newIdx);
-  countTotals();
-  updateStats();
-}
-
-function countTotals() {
-  state.totalSets = state.sets.reduce((a, ex) => a + ex.length, 0);
-}
-
-function updateStats() {
-  const done = state.sets.flat().filter(s => s.done).length;
-  const vol = state.sets.flat().filter(s => s.done).reduce((a, s) => a + s.w * s.r, 0);
-  const cals = Math.round(vol * 0.045);
-  const pct = state.totalSets ? done / state.totalSets : 0;
-
-  document.getElementById('stat-sets').textContent = `${done} / ${state.totalSets}`;
-  document.getElementById('stat-volume').textContent = `${vol.toLocaleString()} lbs`;
-  document.getElementById('stat-cals').textContent = `${cals} kcal`;
-  document.getElementById('ring1-val').textContent = `${Math.round(pct*100)}%`;
-  document.getElementById('ring2-val').textContent = `${vol.toLocaleString()}`;
-  document.getElementById('ring3-val').textContent = `${cals}`;
-
-  const circumference = 150.8;
-  document.getElementById('ring1').style.strokeDashoffset = circumference * (1 - pct);
-  document.getElementById('ring2').style.strokeDashoffset = circumference * (1 - Math.min(vol/5000, 1));
-  document.getElementById('ring3').style.strokeDashoffset = circumference * (1 - Math.min(cals/400, 1));
-}
-
-// ── Timer ──
-let timerSeconds = 0;
-let timerIv = null;
-
-function startTimer(seconds) {
-  if (timerIv) clearInterval(timerIv);
-  timerSeconds = seconds;
-  document.getElementById('restTimer').classList.add('visible');
-  renderTimerDisplay();
-  timerIv = setInterval(() => {
-    timerSeconds--;
-    renderTimerDisplay();
-    if (timerSeconds <= 0) stopTimer();
-  }, 1000);
-}
-
-function stopTimer() {
-  clearInterval(timerIv);
-  timerIv = null;
-  document.getElementById('restTimer').classList.remove('visible');
-}
-
-function renderTimerDisplay() {
-  const m = Math.floor(timerSeconds / 60);
-  const s = timerSeconds % 60;
-  document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2,'0')}`;
-}
-
-// ── Workout Clock ──
-function startWorkoutClock() {
-  setInterval(() => {
-    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-    const m = Math.floor(elapsed / 60).toString().padStart(2,'0');
-    const s = (elapsed % 60).toString().padStart(2,'0');
-    document.getElementById('stat-duration').textContent = `${m}:${s}`;
-  }, 1000);
-}
-
-// ── Volume Chart ──
-function drawVolumeChart() {
-  const canvas = document.getElementById('volumeChart');
-  const ctx = canvas.getContext('2d');
-  const data = [18200, 21000, 16500, 23400, 19800, 25100, 0];
-  const days = ['M','T','W','T','F','S','S'];
-  const max = Math.max(...data);
-  const w = canvas.width, h = canvas.height;
-  const pad = { l: 8, r: 8, t: 8, b: 20 };
-  const bw = (w - pad.l - pad.r) / data.length;
-
-  ctx.clearRect(0, 0, w, h);
-
-  data.forEach((val, i) => {
-    const bh = val ? ((val / max) * (h - pad.t - pad.b)) : 2;
-    const x = pad.l + i * bw + bw * 0.15;
-    const y = h - pad.b - bh;
-
-    const grad = ctx.createLinearGradient(0, y, 0, h - pad.b);
-    grad.addColorStop(0, '#6c63ff');
-    grad.addColorStop(1, '#6c63ff44');
-    ctx.fillStyle = i === 6 ? '#2e3250' : grad;
-    ctx.beginPath();
-    ctx.roundRect(x, y, bw * 0.7, bh, [3, 3, 0, 0]);
-    ctx.fill();
-
-    ctx.fillStyle = '#7a7f9a';
-    ctx.font = '9px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText(days[i], x + bw * 0.35, h - 5);
-  });
-}
-
-// ── Nav & Tabs ──
-function switchNav(btn, view) {
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+function authSwitch(mode, btn) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('authName').style.display = mode === 'signup' ? '' : 'none';
+  document.querySelector('.auth-btn').textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
 }
 
-function switchTab(tab, id) {
-  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  ['today','generate','exercises'].forEach(t => {
-    document.getElementById(`tab-${t}`).style.display = t === id ? '' : 'none';
+function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const name = document.getElementById('authName').value.trim();
+  if (!email) { alert('Please enter your email.'); return; }
+  const displayName = name || email.split('@')[0];
+  currentUser = { name: displayName, email };
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('userName').textContent = displayName;
+  initApp();
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'none';
+}
+
+// ══════════════════════════════
+// APP INIT
+// ══════════════════════════════
+function initApp() {
+  renderPlanSidebar();
+  selectPlanDay(TODAY_STR);
+  renderCalendar();
+  renderChangeLog();
+}
+
+// ══════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.topbar-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'calendar') renderCalendar();
+}
+
+// ══════════════════════════════
+// MY PLAN
+// ══════════════════════════════
+function renderPlanSidebar() {
+  const sb = document.getElementById('planSidebar');
+  sb.innerHTML = '';
+  workoutPlan.forEach(day => {
+    const d = parseDate(day.date);
+    const isToday = day.date === TODAY_STR;
+    const thumb = document.createElement('div');
+    thumb.className = 'plan-day-thumb' + (isToday ? ' today-thumb' : '');
+    thumb.id = 'thumb-' + day.date;
+    thumb.innerHTML = `
+      <div class="pdt-top">
+        <span class="pdt-date">${fmtDateShort(d)}</span>
+        <span class="pdt-badge badge-${day.modified_by_ai?'modified':day.status}">${day.modified_by_ai?'Modified':cap(day.status)}</span>
+      </div>
+      <div class="pdt-title">${day.title}</div>
+      <div class="pdt-type type-${day.type}">${cap(day.type)}</div>
+    `;
+    thumb.onclick = () => selectPlanDay(day.date);
+    sb.appendChild(thumb);
   });
 }
 
-function toggleMuscle(btn) { btn.classList.toggle('selected'); }
-
-// ── Add Exercise ──
-function addExercise() {
-  const name = prompt('Exercise name:');
-  if (!name) return;
-  const idx = state.sets.length;
-  state.sets.push([{w:0, r:8, done:false}]);
-  previousData.push(['—']);
-
-  const list = document.getElementById('exerciseList');
-  const card = document.createElement('div');
-  card.className = 'exercise-card';
-  card.id = `ex-${idx}`;
-  card.innerHTML = `
-    <div class="exercise-top">
-      <span class="exercise-name">${name}</span>
-      <span class="exercise-badge">Custom</span>
-    </div>
-    <table class="sets-table">
-      <thead><tr><th>Set</th><th>Previous</th><th>lbs</th><th>Reps</th><th>Done</th></tr></thead>
-      <tbody id="sets-${idx}"></tbody>
-    </table>
-    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="addSet(${idx})">+ Set</button>
-  `;
-  list.appendChild(card);
-  renderSet(idx, 0);
-  countTotals();
-  updateStats();
+function selectPlanDay(dateStr) {
+  selectedDay = dateStr;
+  document.querySelectorAll('.plan-day-thumb').forEach(t => t.classList.remove('selected'));
+  const thumb = document.getElementById('thumb-' + dateStr);
+  if (thumb) thumb.classList.add('selected');
+  renderPlanMain(dateStr);
 }
 
-// ── Finish ──
-function finishWorkout() {
-  const done = state.sets.flat().filter(s => s.done).length;
-  const vol = state.sets.flat().filter(s => s.done).reduce((a,s) => a + s.w*s.r, 0);
-  alert(`Workout complete!\n\nSets finished: ${done}/${state.totalSets}\nTotal volume: ${vol.toLocaleString()} lbs\n\nGreat work!`);
+function renderPlanMain(dateStr) {
+  const day = workoutPlan.find(d => d.date === dateStr);
+  if (!day) return;
+  const container = document.getElementById('planMain');
+  const d = parseDate(day.date);
+  const isToday = dateStr === TODAY_STR;
+
+  if (day.type === 'rest') {
+    container.innerHTML = `
+      <div class="day-card">
+        <div class="day-card-header">
+          <div class="day-card-meta">
+            <div class="day-card-date">${fmtDateLong(d)}${isToday?' — Today':''}</div>
+            <div class="day-card-title">${day.title}</div>
+          </div>
+          <span class="status-chip" style="background:#2a2e4566;color:var(--muted);">REST</span>
+        </div>
+        <div class="rest-day-card">
+          <div class="rest-icon">🛌</div>
+          <div class="rest-title">Rest &amp; Recovery</div>
+          <div class="rest-text">${day.coach_notes}</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const statusColors = {
+    upcoming:'background:var(--accent)22;color:var(--accent);',
+    complete:'background:var(--success)22;color:var(--success);',
+    missed:'background:var(--danger)22;color:var(--danger);',
+    modified:'background:var(--warning)22;color:var(--warning);',
+  };
+  const sc = statusColors[day.modified_by_ai ? 'modified' : day.status] || statusColors.upcoming;
+
+  const rows = day.exercises.map(ex => `
+    <tr>
+      <td><div class="ex-name">${ex.name}</div>${ex.notes?`<div class="ex-note">${ex.notes}</div>`:''}</td>
+      <td style="text-align:center;">${ex.sets}</td>
+      <td style="text-align:center;">${ex.reps}</td>
+      <td><span class="weight-pill">${ex.weight_value}</span></td>
+      <td><span class="rest-val">${ex.rest_time}</span></td>
+    </tr>`).join('');
+
+  container.innerHTML = `
+    <div class="day-card">
+      ${day.modified_by_ai ? `<div class="modified-banner"><span>⚡</span> Modified by AI Coach — ${day.ai_reason||'Adjusted for user request.'}</div>` : ''}
+      <div class="day-card-header">
+        <div class="day-card-meta">
+          <div class="day-card-date">${fmtDateLong(d)}${isToday?' — Today':''}</div>
+          <div class="day-card-title">${day.title}</div>
+          <div class="day-card-goal">${day.goal}</div>
+        </div>
+        <span class="status-chip" style="${sc}">${day.modified_by_ai?'Modified':cap(day.status)}</span>
+      </div>
+      <div class="type-pill">
+        <div class="type-dot dot-${day.type}"></div>
+        <span class="type-${day.type}">${cap(day.type)}</span>
+      </div>
+      ${day.coach_notes ? `
+      <div class="coach-notes">
+        <div class="coach-notes-label">Coach Notes</div>
+        <div class="coach-notes-text">${day.coach_notes}</div>
+      </div>` : ''}
+      <table class="exercise-table">
+        <thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight / %</th><th>Rest</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="day-actions">
+        ${day.status !== 'complete' ? `<button class="btn btn-success btn-sm" onclick="markComplete('${dateStr}')">✓ Mark Complete</button>` : '<span style="color:var(--success);font-size:0.82rem;font-weight:600;">✓ Completed</span>'}
+        <button class="btn btn-secondary btn-sm" onclick="openChatWithContext('${dateStr}','ask')">Ask Coach</button>
+        <button class="btn btn-secondary btn-sm" onclick="openChatWithContext('${dateStr}','modify')">Modify Workout</button>
+        <button class="btn btn-secondary btn-sm" onclick="openChatWithContext('${dateStr}','move')">Move Workout</button>
+        <button class="btn btn-warning btn-sm" onclick="openChatWithContext('${dateStr}','swap')">Swap Exercise</button>
+      </div>
+    </div>`;
 }
 
-// ── AI Chat ──
-const aiResponses = {
-  'form check': 'For bench press: keep shoulder blades retracted and depressed, slight arch in lower back, bar touches mid-chest. For OHP: brace your core hard, tuck the bar slightly behind the head at lockout. Want a specific exercise breakdown?',
-  'increase weight': "Based on your volume today, you're ready to bump bench press up 5 lbs next session. Stick to the same weight on OHP until you hit all reps cleanly.",
-  'feeling tired': "Consider cutting the last isolation set and adding 5 minutes rest between compounds. Are you sleeping 7-9 hours? Fatigue is often a recovery signal, not a training one.",
-  'substitute exercise': "I can swap exercises for you! What muscle group and what equipment do you have available? For example, no cable? I can replace tricep pushdowns with skull crushers or close-grip bench.",
-};
+function markComplete(dateStr) {
+  const day = workoutPlan.find(d => d.date === dateStr);
+  if (!day) return;
+  day.status = 'complete';
+  renderPlanSidebar();
+  selectPlanDay(dateStr);
+  renderCalendar();
+}
 
-function quickPrompt(el) {
+function openChatWithContext(dateStr, action) {
+  const day = workoutPlan.find(d => d.date === dateStr);
+  if (!day) return;
+  switchTab('chat', document.querySelectorAll('.topbar-tab')[2]);
+  const msgs = {
+    ask: `Tell me about the ${fmtDateLong(parseDate(dateStr))} workout.`,
+    modify: `Can you modify the ${day.title} workout on ${fmtDateLong(parseDate(dateStr))}?`,
+    move: `Can you move the ${day.title} workout to a different day?`,
+    swap: `Can you swap an exercise in today's ${day.title} workout?`,
+  };
+  setTimeout(() => {
+    document.getElementById('chatInput').value = msgs[action] || '';
+    sendChat();
+  }, 200);
+}
+
+// ══════════════════════════════
+// CALENDAR
+// ══════════════════════════════
+function renderCalendar() {
+  if (calView === 'month') renderMonthView();
+  else renderWeekView();
+}
+
+function calNav(dir) {
+  calOffset += dir;
+  renderCalendar();
+}
+
+function setCalView(v, btn) {
+  calView = v;
+  calOffset = 0;
+  document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCalendar();
+}
+
+function renderMonthView() {
+  const today = parseDate(TODAY_STR);
+  const ref = new Date(today.getFullYear(), today.getMonth() + calOffset, 1);
+  document.getElementById('calLabel').textContent = ref.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  const firstDay = new Date(ref.getFullYear(), ref.getMonth(), 1).getDay();
+  const daysInMonth = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
+  const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let html = `<div class="month-grid">`;
+  weekdays.forEach(d => { html += `<div class="cal-weekday">${d}</div>`; });
+
+  for (let i = 0; i < firstDay; i++) {
+    const prevDay = new Date(ref.getFullYear(), ref.getMonth(), -firstDay + i + 1);
+    html += calCell(prevDay, true, today);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    const day = new Date(ref.getFullYear(), ref.getMonth(), i);
+    html += calCell(day, false, today);
+  }
+  const remaining = (7 - (firstDay + daysInMonth) % 7) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    const nextDay = new Date(ref.getFullYear(), ref.getMonth() + 1, i);
+    html += calCell(nextDay, true, today);
+  }
+  html += `</div>`;
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function calCell(date, otherMonth, today) {
+  const ds = toDateStr(date);
+  const plan = workoutPlan.find(d => d.date === ds);
+  const isToday = ds === TODAY_STR;
+  let statusClass = '';
+  let dotColor = '';
+  let label = '';
+
+  if (plan) {
+    const s = plan.modified_by_ai ? 'modified' : plan.status;
+    statusClass = `status-${s}`;
+    label = plan.type === 'rest' ? 'Rest' : plan.title.split(' ').slice(-1)[0];
+  }
+
+  return `<div class="cal-cell ${statusClass}${otherMonth?' other-month':''}${isToday?' today-cell':''}"
+    onclick="selectCalDay('${ds}')">
+    <div class="cal-date-num">${date.getDate()}</div>
+    ${plan && plan.type !== 'rest' ? `<div class="cal-cell-dot"></div><div class="cal-cell-label">${label}</div>` : ''}
+    ${plan && plan.type === 'rest' ? `<div class="cal-cell-dot" style="background:var(--muted);"></div>` : ''}
+  </div>`;
+}
+
+function renderWeekView() {
+  const today = parseDate(TODAY_STR);
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() + calOffset * 7);
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    days.push(d);
+  }
+
+  const firstDay = days[0];
+  const lastDay = days[6];
+  document.getElementById('calLabel').textContent =
+    `${firstDay.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${lastDay.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const typeColors = {strength:'var(--accent)',hypertrophy:'var(--accent2)',conditioning:'var(--warning)',mobility:'var(--info)',recovery:'var(--success)',rest:'var(--muted)'};
+
+  let html = `<div class="week-grid">`;
+  days.forEach(d => {
+    const ds = toDateStr(d);
+    const plan = workoutPlan.find(p => p.date === ds);
+    const isToday = ds === TODAY_STR;
+    const s = plan ? (plan.modified_by_ai ? 'modified' : plan.status) : '';
+    const borderColor = {complete:'var(--success)',missed:'var(--danger)',modified:'var(--warning)',upcoming:isToday?'var(--info)':'var(--border)',rest:'var(--border)','':'var(--border)'}[s];
+
+    html += `<div class="week-cell" style="border-color:${borderColor};" onclick="selectCalDay('${ds}')">
+      <div class="week-day-name">${dayNames[d.getDay()]}</div>
+      <div class="week-date" style="${isToday?'color:var(--info);':''}">${d.getDate()}</div>
+      ${plan ? `
+        <div class="week-workout-name">${plan.title}</div>
+        <div class="week-type-chip" style="background:${typeColors[plan.type]||'var(--accent)'}22;color:${typeColors[plan.type]||'var(--accent)'};">${cap(plan.type)}</div>
+        ${plan.exercises.length ? `<div style="font-size:0.7rem;color:var(--muted);margin-top:6px;">${plan.exercises.length} exercises</div>` : ''}
+        <div style="margin-top:6px;"><span class="pdt-badge badge-${plan.modified_by_ai?'modified':plan.status}">${plan.modified_by_ai?'Modified':cap(plan.status)}</span></div>
+      ` : '<div style="font-size:0.78rem;color:var(--muted);">No workout</div>'}
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function selectCalDay(dateStr) {
+  document.querySelectorAll('.cal-cell,.week-cell').forEach(c => c.classList.remove('selected'));
+  const clickedCells = document.querySelectorAll(`[onclick*="'${dateStr}'"]`);
+  clickedCells.forEach(c => { if (c.classList.contains('cal-cell')||c.classList.contains('week-cell')) c.classList.add('selected'); });
+
+  const plan = workoutPlan.find(d => d.date === dateStr);
+  const detail = document.getElementById('calDetail');
+  if (!plan) { detail.innerHTML = '<div class="no-selection">No workout scheduled.</div>'; return; }
+
+  const d = parseDate(plan.date);
+  const statusColors = {upcoming:'var(--accent)',complete:'var(--success)',missed:'var(--danger)',rest:'var(--muted)'};
+  const sc = plan.modified_by_ai ? 'var(--warning)' : (statusColors[plan.status] || 'var(--muted)');
+
+  let exHtml = '';
+  plan.exercises.forEach(ex => {
+    exHtml += `<div class="detail-ex"><strong>${ex.name}</strong><span>${ex.sets} sets × ${ex.reps} reps @ ${ex.weight_value} | Rest: ${ex.rest_time}</span></div>`;
+  });
+
+  detail.innerHTML = `
+    <div class="detail-date">${fmtDateLong(d)}</div>
+    <div class="detail-title">${plan.title}</div>
+    <span class="pdt-badge badge-${plan.modified_by_ai?'modified':plan.status}" style="display:inline-block;margin-bottom:12px;">${plan.modified_by_ai?'Modified by AI':cap(plan.status)}</span>
+    ${plan.coach_notes ? `<div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;line-height:1.5;">${plan.coach_notes}</div>` : ''}
+    ${plan.exercises.length ? `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Exercises</div><div class="detail-ex-list">${exHtml}</div>` : ''}
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${plan.status !== 'complete' && plan.type !== 'rest' ? `<button class="btn btn-success btn-sm" onclick="markComplete('${dateStr}');renderCalendar();">✓ Mark Complete</button>` : ''}
+      ${plan.type !== 'rest' ? `<button class="btn btn-secondary btn-sm" onclick="openChatWithContext('${dateStr}','ask')">Ask Coach About This Day</button>` : ''}
+    </div>`;
+}
+
+// ══════════════════════════════
+// COACH CHAT
+// ══════════════════════════════
+function useQuick(el) {
   document.getElementById('chatInput').value = el.textContent;
-  sendMessage();
+  sendChat();
 }
 
-function sendMessage() {
+function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if (!text) return;
-
-  appendMessage(text, 'user');
+  appendMsg(text, 'user');
   input.value = '';
-
-  setTimeout(() => {
-    const lower = text.toLowerCase();
-    let reply = "Great question! I'm here to help you optimize every set. Could you give me a bit more detail so I can tailor my advice?";
-    for (const [key, val] of Object.entries(aiResponses)) {
-      if (lower.includes(key.split(' ')[0])) { reply = val; break; }
-    }
-    appendMessage(reply, 'ai');
-  }, 600);
+  setTimeout(() => processMessage(text), 500);
 }
 
-function appendMessage(text, role) {
+function appendMsg(text, role, extraHtml) {
   const container = document.getElementById('chatMessages');
   const div = document.createElement('div');
-  div.className = `message ${role}`;
-  const now = new Date().toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'});
-  div.innerHTML = `${text}<div class="message-time">${now}</div>`;
+  div.className = `msg ${role}`;
+  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const avatar = role === 'ai' ? '<div class="msg-avatar ai-av">🤖</div>' : '<div class="msg-avatar user-av">👤</div>';
+  div.innerHTML = `${avatar}<div><div class="msg-bubble">${text}${extraHtml||''}</div><div class="msg-time">${now}</div></div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+  return div;
 }
 
-// ── Generate Program (placeholder) ──
-function generateProgram() {
-  const goal = document.getElementById('gen-goal').value;
-  const days = document.getElementById('gen-days').value;
-  const level = document.getElementById('gen-level').value;
-  appendMessage(`Generate a ${level} ${goal} program training ${days}.`, 'user');
-  switchTab(document.querySelector('.panel-tab'), 'today');
-  document.querySelectorAll('.panel-tab')[0].classList.add('active');
-  setTimeout(() => {
-    appendMessage(`I've noted your goal: ${goal} at ${level} level, ${days}. In the next step I'll wire this to the real AI API and generate your full periodized program with progressive overload built in. Stay tuned!`, 'ai');
-  }, 700);
+function processMessage(text) {
+  const t = text.toLowerCase();
+  const today = workoutPlan.find(d => d.date === TODAY_STR);
+  const yesterday = workoutPlan.find(d => d.date === makeDate(-1));
+
+  // ── Intent: missed workout ──
+  if (t.includes('missed') && (t.includes('yesterday') || t.includes('workout'))) {
+    const missed = yesterday;
+    if (missed && missed.status === 'missed') {
+      appendMsg(`I can see you missed <strong>${missed.title}</strong> on ${fmtDateLong(parseDate(missed.date))}. Here are your options:<br><br>
+        1. <strong>Skip it</strong> — continue with today's plan as scheduled.<br>
+        2. <strong>Do it today</strong> — I'll reschedule today's workout to tomorrow.<br>
+        3. <strong>Condense both</strong> — I'll shorten today's workout and add key exercises from yesterday.<br><br>
+        Which option works for you? (type 1, 2, or 3)`, 'ai');
+    } else {
+      appendMsg(`I checked your plan — I don't see a missed workout from yesterday. Your current upcoming workout is <strong>${today ? today.title : 'not scheduled'}</strong>. Is there a specific day you're referring to?`, 'ai');
+    }
+    return;
+  }
+
+  // ── Intent: sore legs ──
+  if ((t.includes('sore') || t.includes('tired') || t.includes('fatigued')) && (t.includes('leg') || t.includes('lower'))) {
+    if (today) {
+      const isLowerDay = today.type === 'strength' || today.type === 'hypertrophy';
+      proposeChange(
+        today,
+        'User reported leg soreness.',
+        `I can reduce lower-body volume and replace heavy squats with lighter mobility and upper-body work. Here's what I'd change for <strong>${today.title}</strong>:`,
+        [
+          { type:'remove', text:`Remove: Back Squat (4×10) — too much knee/quad load` },
+          { type:'remove', text:`Remove: Walking Lunges` },
+          { type:'add', text:`Add: Hip 90/90 Stretch (3×60 sec each side)` },
+          { type:'add', text:`Add: Upper Body Push — DB Shoulder Press (3×12)` },
+          { type:'keep', text:`Keep: Romanian Deadlift (lighter — drop to 55%)` },
+        ],
+        'Lite Lower + Upper',
+        [
+          {name:'Romanian Deadlift', sets:3, reps:12, weight_type:'percentage', weight_value:'55%', rest_time:'75 sec', notes:'Lighter due to soreness.'},
+          {name:'Leg Curl', sets:3, reps:15, weight_type:'weight', weight_value:'90 lbs', rest_time:'60 sec', notes:'Knee flexion only — less quad stress.'},
+          {name:'DB Shoulder Press', sets:3, reps:12, weight_type:'weight', weight_value:'45 lbs', rest_time:'75 sec', notes:'Added from upper day.'},
+          {name:'Hip 90/90 Stretch', sets:3, reps:1, weight_type:'weight', weight_value:'60 sec', rest_time:'—', notes:'Each side. Mobility work.'},
+        ]
+      );
+    } else {
+      appendMsg(`Rest up! I see you don't have a lower body workout today. Make sure you're getting enough sleep and protein to recover for the next session.`, 'ai');
+    }
+    return;
+  }
+
+  // ── Intent: only 30 minutes ──
+  if (t.includes('30 minute') || t.includes('30min') || t.includes('short') || t.includes('not much time')) {
+    if (today) {
+      proposeChange(
+        today,
+        'User only has 30 minutes.',
+        `No problem. I'll cut today's <strong>${today.title}</strong> down to the main compound lifts only — this fits in 25-30 min:`,
+        [
+          { type:'keep', text:`Keep: ${today.exercises[0]?.name||'Main lift'} (main compound)` },
+          { type:'keep', text:`Keep: ${today.exercises[1]?.name||'Secondary lift'} (secondary)` },
+          { type:'remove', text:`Remove: Accessory exercises (${today.exercises.slice(2).map(e=>e.name).join(', ')})` },
+        ],
+        today.title + ' (30 min)',
+        today.exercises.slice(0,2).map(ex => ({...ex, sets: Math.min(ex.sets, 3)}))
+      );
+    }
+    return;
+  }
+
+  // ── Intent: make easier ──
+  if (t.includes('easier') || t.includes('too hard') || t.includes('reduce') || t.includes('less volume')) {
+    if (today) {
+      const lightened = today.exercises.map(ex => ({
+        ...ex,
+        sets: Math.max(2, ex.sets - 1),
+        weight_value: ex.weight_type === 'percentage'
+          ? (parseInt(ex.weight_value) - 10) + '%'
+          : ex.weight_value
+      }));
+      proposeChange(
+        today,
+        'User requested reduced difficulty.',
+        `I'll reduce volume and intensity for <strong>${today.title}</strong>:`,
+        [
+          { type:'remove', text:'Remove 1 set per exercise' },
+          { type:'remove', text:'Drop weight percentages by 10%' },
+          { type:'add', text:'Add 30 sec extra rest between sets' },
+        ],
+        today.title + ' (Reduced)',
+        lightened
+      );
+    }
+    return;
+  }
+
+  // ── Intent: swap squats ──
+  if (t.includes('swap') || t.includes('replace') || t.includes('substitute')) {
+    const ex = today ? today.exercises.find(e => t.includes(e.name.toLowerCase().split(' ')[0])) || today.exercises[0] : null;
+    if (today && ex) {
+      proposeChange(
+        today,
+        `User requested exercise swap: ${ex.name}.`,
+        `I'll swap <strong>${ex.name}</strong> for a suitable alternative that targets the same muscle group:`,
+        [
+          { type:'remove', text:`Remove: ${ex.name}` },
+          { type:'add', text:`Add: Hack Squat (same quad target, less lower-back demand)` },
+        ],
+        today.title,
+        today.exercises.map(e => e.name === ex.name
+          ? {...e, name:'Hack Squat', notes:'Swapped from '+ex.name+' — same muscle group.'}
+          : e)
+      );
+    } else {
+      appendMsg(`Which exercise would you like to swap, and from which day? I'll find the best alternative that targets the same muscles.`, 'ai');
+    }
+    return;
+  }
+
+  // ── Intent: move workout ──
+  if (t.includes('move') && (t.includes('tomorrow') || t.includes('different day') || t.includes('another day'))) {
+    if (today) {
+      const tomorrow = workoutPlan.find(d => d.date === makeDate(1));
+      if (tomorrow && tomorrow.type !== 'rest') {
+        appendMsg(`I see tomorrow (<strong>${tomorrow.title}</strong>) already has a workout scheduled. Moving today's workout there would stack two sessions. I recommend either:<br><br>
+          1. Swap today and tomorrow's workouts.<br>
+          2. Push today to the next rest day (${getNextRestDay()}).<br><br>
+          Which would you prefer?`, 'ai');
+      } else {
+        appendMsg(`I can move today's <strong>${today.title}</strong> to tomorrow. That day is currently a rest day, so there's no conflict. Should I make that change?<br><br>
+          <div class="confirm-card">
+            <div class="confirm-title">Proposed Change</div>
+            <div class="confirm-diff">
+              Today (${fmtDateShort(parseDate(TODAY_STR))}): <span class="removed">${today.title}</span> → Rest Day<br>
+              Tomorrow (${fmtDateShort(parseDate(makeDate(1)))}): <span class="added">${today.title}</span> moved here
+            </div>
+            <div class="confirm-btns">
+              <button class="btn btn-primary btn-sm" onclick="approveMove()">Yes, Move It</button>
+              <button class="btn btn-secondary btn-sm" onclick="appendMsg('Got it, no changes made.','ai')">No, Keep As Is</button>
+            </div>
+          </div>`, 'ai');
+      }
+    }
+    return;
+  }
+
+  // ── Intent: explain workout ──
+  if (t.includes('why') || t.includes('explain') || t.includes('purpose') || t.includes('programmed')) {
+    if (today) {
+      appendMsg(`<strong>Why ${today.title}?</strong><br><br>
+        This session is a <em>${cap(today.type)}</em> day. Here's the rationale:<br><br>
+        • <strong>Goal:</strong> ${today.goal}<br>
+        • <strong>Timing:</strong> Placed here to allow recovery from the previous ${yesterday ? yesterday.type : 'session'} while maintaining training frequency.<br>
+        • <strong>Volume:</strong> ${today.exercises.reduce((a,e)=>a+e.sets,0)} total sets — within optimal weekly range for your goal.<br>
+        • <strong>Progressions:</strong> Weight or volume will increase each week following the same structure.<br><br>
+        <em>${today.coach_notes}</em>`, 'ai');
+    }
+    return;
+  }
+
+  // ── Intent: about a specific day ──
+  if (t.includes('tell me about') || t.includes('what is') || t.includes('what\'s')) {
+    if (today) {
+      appendMsg(`<strong>${today.title}</strong> — ${fmtDateLong(parseDate(today.date))}<br><br>
+        <strong>Type:</strong> ${cap(today.type)}<br>
+        <strong>Goal:</strong> ${today.goal}<br>
+        <strong>Exercises:</strong> ${today.exercises.map(e=>e.name).join(', ')}<br>
+        <strong>Total Volume:</strong> ${today.exercises.reduce((a,e)=>a+e.sets,0)} sets<br><br>
+        <em>Coach: ${today.coach_notes}</em>`, 'ai');
+    }
+    return;
+  }
+
+  // ── Fallback ──
+  const fallbacks = [
+    `I'm looking at your plan now. Could you give me a bit more detail? For example: which day are you asking about, or which exercise needs changing?`,
+    `Got it. I can modify workouts, swap exercises, adjust volume or intensity, or explain why something is programmed. What specifically do you need?`,
+    `I checked your current plan. Today is <strong>${today ? today.title : 'a rest day'}</strong>. Is there something specific about this workout you'd like to change?`,
+  ];
+  appendMsg(fallbacks[Math.floor(Math.random()*fallbacks.length)], 'ai');
 }
 
-init();
+// ── Propose a plan change ──
+function proposeChange(day, reason, introText, diffs, newTitle, newExercises) {
+  pendingChange = { day, reason, newTitle, newExercises };
+
+  const diffHtml = diffs.map(d =>
+    `<div class="${d.type==='remove'?'removed':d.type==='add'?'added':''}">${d.text}</div>`
+  ).join('');
+
+  const cardHtml = `
+    <div class="confirm-card">
+      <div class="confirm-title">Proposed Change</div>
+      <div class="confirm-diff">${diffHtml}</div>
+      <div class="confirm-btns">
+        <button class="btn btn-primary btn-sm" onclick="approveChange()">Yes, Update My Plan</button>
+        <button class="btn btn-secondary btn-sm" onclick="declineChange()">No, Keep As Is</button>
+      </div>
+    </div>`;
+
+  appendMsg(`${introText}<br><br>Do you want me to update this in your plan?`, 'ai', cardHtml);
+}
+
+function approveChange() {
+  if (!pendingChange) return;
+  const { day, reason, newTitle, newExercises } = pendingChange;
+  const original = JSON.parse(JSON.stringify(day));
+
+  day.title = newTitle;
+  day.exercises = newExercises;
+  day.modified_by_ai = true;
+  day.ai_reason = reason;
+  day.status = day.status === 'complete' ? 'complete' : 'upcoming';
+
+  changeLog.unshift({
+    change_id: 'chg_' + Date.now(),
+    date_changed: TODAY_STR,
+    workout_date: day.date,
+    original_workout: original,
+    updated_workout: JSON.parse(JSON.stringify(day)),
+    reason,
+    approved_by_user: true,
+  });
+
+  pendingChange = null;
+  renderPlanSidebar();
+  renderCalendar();
+  renderChangeLog();
+  if (selectedDay === day.date) renderPlanMain(day.date);
+
+  appendMsg(`Done! I've updated <strong>${day.title}</strong> in your My Plan tab. The change has been logged. You can view the history in the sidebar.<br><br><em>Marked as "Modified by AI Coach."</em>`, 'ai');
+}
+
+function declineChange() {
+  pendingChange = null;
+  appendMsg(`No changes made. Your plan stays as scheduled. Let me know if you need anything else!`, 'ai');
+}
+
+function approveMove() {
+  const today = workoutPlan.find(d => d.date === TODAY_STR);
+  const tomorrow = workoutPlan.find(d => d.date === makeDate(1));
+  if (!today || !tomorrow) return;
+
+  const originalToday = JSON.parse(JSON.stringify(today));
+  const originalTomorrow = JSON.parse(JSON.stringify(tomorrow));
+
+  tomorrow.title = today.title;
+  tomorrow.type = today.type;
+  tomorrow.goal = today.goal;
+  tomorrow.coach_notes = today.coach_notes;
+  tomorrow.exercises = [...today.exercises];
+  tomorrow.modified_by_ai = true;
+  tomorrow.ai_reason = 'User moved workout from today.';
+  tomorrow.status = 'upcoming';
+
+  today.title = 'Rest Day';
+  today.type = 'rest';
+  today.goal = '';
+  today.exercises = [];
+  today.modified_by_ai = true;
+  today.ai_reason = 'Original workout moved to tomorrow.';
+
+  changeLog.unshift({ change_id: 'chg_' + Date.now(), date_changed: TODAY_STR, workout_date: TODAY_STR, original_workout: originalToday, updated_workout: JSON.parse(JSON.stringify(today)), reason:'User moved workout to tomorrow.', approved_by_user:true });
+
+  renderPlanSidebar();
+  renderCalendar();
+  renderChangeLog();
+  renderPlanMain(selectedDay || TODAY_STR);
+
+  appendMsg(`Done! I moved the workout to tomorrow. Today is now a rest day. Your Calendar has been updated.`, 'ai');
+}
+
+function getNextRestDay() {
+  for (const d of workoutPlan) {
+    if (d.date > TODAY_STR && d.type === 'rest') return fmtDateShort(parseDate(d.date));
+  }
+  return 'the next available day';
+}
+
+// ── Change Log Sidebar ──
+function renderChangeLog() {
+  const list = document.getElementById('changeLogList');
+  if (!changeLog.length) {
+    list.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);">No changes yet.</div>';
+    return;
+  }
+  list.innerHTML = changeLog.map(c => `
+    <div class="change-log-item">
+      <div class="h-date">⚡ ${fmtDateShort(parseDate(c.date_changed))}</div>
+      <div class="h-preview">${c.reason}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════
+// UTILITIES
+// ══════════════════════════════
+function parseDate(str) { return new Date(str + 'T12:00:00'); }
+function toDateStr(d) { return d.toISOString().slice(0,10); }
+function fmtDateLong(d) { return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); }
+function fmtDateShort(d) { return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function cap(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+function makeDate(offset) {
+  const d = new Date('2026-05-14T12:00:00');
+  d.setDate(d.getDate()+offset);
+  return d.toISOString().slice(0,10);
+}
 </script>
 </body>
 </html>
