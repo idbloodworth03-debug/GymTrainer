@@ -84,8 +84,8 @@
     display:flex;align-items:center;justify-content:center;
     font-weight:600;font-size:12px;
   }
-  .user-chip .logout{color:var(--muted);font-size:12px;margin-left:4px}
-  .user-chip .logout:hover{color:var(--danger)}
+  .user-chip .logout{color:var(--muted);font-size:12px;margin-left:4px;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;font-family:inherit}
+  .user-chip .logout:hover{color:var(--danger);background:rgba(197,48,48,0.1)}
 
   main.content{flex:1;overflow:hidden;position:relative}
   .panel{position:absolute;inset:0;display:none;overflow:auto;padding:24px}
@@ -652,7 +652,7 @@
     <div class="user-chip">
       <div class="avatar" id="user-avatar">TV</div>
       <span id="user-name">Tommy</span>
-      <button class="logout" id="logout-btn">Log out</button>
+      <button class="logout" id="logout-btn" onclick="sb.auth.signOut()">Log out</button>
     </div>
   </header>
 
