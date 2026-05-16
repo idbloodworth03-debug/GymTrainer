@@ -473,6 +473,7 @@
   .tm-val{color:var(--accent2);font-weight:600}
   .pr-empty{text-align:center;padding:32px;color:var(--muted);font-size:14px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -845,6 +846,13 @@ const LS = {
   remove(k) { localStorage.removeItem(k); }
 };
 
+/* ==========================================================
+   SUPABASE
+========================================================== */
+const SUPABASE_URL = 'https://hvlvzqihbyuarqgcimjy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bHZ6cWloYnl1YXJxZ2NpbWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDYxNzEsImV4cCI6MjA5NDUyMjE3MX0.AmuqbaFpBoaCVvR6f9BrIbacq5aI4CnWz35_R0NHQ7U';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const KEYS = {
   AUTH:'vanta.auth',
   PROFILE:'vanta.profile',
@@ -1003,46 +1011,72 @@ authToggle.addEventListener('click', () => {
   }
 });
 
-authSubmit.addEventListener('click', () => {
+authSubmit.addEventListener('click', async () => {
   const email = document.getElementById('au-email').value.trim();
   const pw = document.getElementById('au-password').value;
   if (!email || !pw) return toast('Email and password required');
-  let name = 'Tommy Vulpescu';
+  authSubmit.textContent = 'Please wait…';
+  authSubmit.disabled = true;
+
   if (STATE.authMode === 'signup') {
-    name = document.getElementById('su-name').value.trim() || name;
+    const name = document.getElementById('su-name').value.trim() || email.split('@')[0];
+    const { error } = await sb.auth.signUp({
+      email, password: pw,
+      options: { data: { name } }
+    });
+    if (error) {
+      toast(error.message);
+      authSubmit.textContent = 'Create Account';
+      authSubmit.disabled = false;
+    } else {
+      toast('Account created! You may need to confirm your email.');
+      authSubmit.textContent = 'Create Account';
+      authSubmit.disabled = false;
+    }
+  } else {
+    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+    if (error) {
+      toast(error.message);
+      authSubmit.textContent = 'Log In';
+      authSubmit.disabled = false;
+    }
+    // success handled by onAuthStateChange
   }
-  const user = { name, email };
-  LS.set(KEYS.AUTH, user);
-  STATE.user = user;
-  enterApp();
 });
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-  LS.remove(KEYS.AUTH);
-  STATE.user = null;
-  app.classList.remove('show');
-  authScreen.style.display = 'flex';
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
 });
 
-function tryAutoLogin() {
-  const u = LS.get(KEYS.AUTH, null);
-  if (u) { STATE.user = u; enterApp(); }
-}
-
-function enterApp() {
-  authScreen.style.display = 'none';
-  app.classList.add('show');
-  const name = STATE.user.name || 'Athlete';
-  document.getElementById('user-name').textContent = name.split(' ')[0];
-  document.getElementById('user-avatar').textContent =
-    name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
-  initData();
-  renderAll();
-  // Show onboarding for new users
-  if (!LS.get(KEYS.PROFILE, null)) {
-    document.getElementById('ob-name').value = name;
-    showOnboarding(1);
+// Supabase auth state handler — single source of truth for login/logout
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    const u = session.user;
+    STATE.user = {
+      id: u.id,
+      email: u.email,
+      name: u.user_metadata?.name || u.email.split('@')[0],
+    };
+    authScreen.style.display = 'none';
+    app.classList.add('show');
+    await loadAllUserData();
+    renderAll();
+    if (!STATE.profile) {
+      document.getElementById('ob-name').value = STATE.user.name;
+      showOnboarding(1);
+    }
+  } else {
+    STATE.user = null;
+    app.classList.remove('show');
+    authScreen.style.display = 'flex';
+    const btn = document.getElementById('auth-submit');
+    btn.textContent = STATE.authMode === 'signup' ? 'Create Account' : 'Log In';
+    btn.disabled = false;
   }
+});
+
+async function tryAutoLogin() {
+  // Session is restored automatically by onAuthStateChange — nothing needed here
 }
 
 /* ==========================================================
@@ -1155,6 +1189,8 @@ function obFinish() {
   LS.set(KEYS.PRS, prs);
   STATE.profile = profile;
   STATE.prs = prs;
+  dbSaveProfile(profile);
+  dbSavePRs(prs);
 
   // Update user name if changed
   if (profile.name && profile.name !== STATE.user.name) {
@@ -1165,6 +1201,7 @@ function obFinish() {
   // Update settings goal
   STATE.settings.goal = profile.primaryGoal;
   LS.set(KEYS.SETTINGS, STATE.settings);
+  dbSaveSettings(STATE.settings);
 
   // Build summary
   const tmLines = PR_EXERCISES
@@ -1192,24 +1229,147 @@ function obComplete() {
   renderSettings();
 }
 
-function initData() {
-  STATE.plan = generatePlan();
-  STATE.statuses = seedStatuses();
-  STATE.mods = LS.get(KEYS.MODS, {});
-  STATE.checkins = seedCheckins();
-  STATE.water = LS.get(KEYS.WATER + '.' + TODAY_STR, 0);
-  STATE.meals = LS.get(KEYS.MEALS + '.' + TODAY_STR, '');
-  STATE.profile = LS.get(KEYS.PROFILE, null);
-  STATE.prs = LS.get(KEYS.PRS, {});
-  STATE.settings = LS.get(KEYS.SETTINGS, {
-    goalWeight: 185,
-    height: '5\'10"',
-    goal: 'Hypertrophy',
-    protein: 200, carbs: 250, fat: 65, calories: 2400,
-  });
-  STATE.chat = LS.get(KEYS.CHAT, [
-    { role:'coach', text:`Hey ${STATE.user.name.split(' ')[0]}, ready to crush it? Ask me anything about your plan, technique, or recovery.` }
+async function loadAllUserData() {
+  const uid = STATE.user.id;
+  const first = STATE.user.name.split(' ')[0];
+
+  // Load everything in parallel
+  const [profileRes, prsRes, statusesRes, modsRes, checkinsRes,
+         settingsRes, chatRes, waterRes, mealsRes] = await Promise.all([
+    sb.from('profiles').select('*').eq('id', uid).maybeSingle(),
+    sb.from('personal_records').select('*').eq('user_id', uid),
+    sb.from('workout_statuses').select('*').eq('user_id', uid),
+    sb.from('workout_modifications').select('*').eq('user_id', uid),
+    sb.from('check_ins').select('*').eq('user_id', uid).order('date'),
+    sb.from('settings').select('*').eq('user_id', uid).maybeSingle(),
+    sb.from('chat_messages').select('*').eq('user_id', uid).order('created_at'),
+    sb.from('water_logs').select('*').eq('user_id', uid).eq('date', TODAY_STR).maybeSingle(),
+    sb.from('meal_logs').select('*').eq('user_id', uid).eq('date', TODAY_STR).maybeSingle(),
   ]);
+
+  // Profile
+  STATE.profile = profileRes.data || null;
+
+  // PRs — convert array to keyed object
+  STATE.prs = {};
+  (prsRes.data || []).forEach(p => {
+    STATE.prs[p.exercise_key] = {
+      name: p.exercise_name, weight: p.weight, reps: p.reps,
+      estimated_1rm: p.estimated_1rm, training_max: p.training_max,
+      date: p.date, confidence: p.confidence,
+    };
+  });
+
+  // Workout statuses — merge seeded past data with user's saved statuses
+  const dbStatuses = {};
+  (statusesRes.data || []).forEach(s => { dbStatuses[s.date] = s.status; });
+  STATE.statuses = { ...seedStatuses(), ...dbStatuses };
+
+  // Workout modifications
+  STATE.mods = {};
+  (modsRes.data || []).forEach(m => { STATE.mods[m.date] = m.modification; });
+
+  // Check-ins — use DB data if available, else seed
+  const dbCheckins = checkinsRes.data || [];
+  STATE.checkins = dbCheckins.length > 0 ? dbCheckins : seedCheckins();
+
+  // Settings
+  const sd = settingsRes.data;
+  STATE.settings = sd ? {
+    goalWeight: sd.goal_weight, height: sd.height, goal: sd.goal,
+    protein: sd.protein, carbs: sd.carbs, fat: sd.fat, calories: sd.calories,
+  } : { goalWeight: 185, height: "5'10\"", goal: 'Hypertrophy', protein: 200, carbs: 250, fat: 65, calories: 2400 };
+
+  // Chat history
+  const dbChat = chatRes.data || [];
+  STATE.chat = dbChat.length > 0
+    ? dbChat.map(m => ({ role: m.role, text: m.text }))
+    : [{ role:'coach', text:`Hey ${first}, ready to crush it? Ask me anything about your plan, technique, or recovery.` }];
+
+  // Water + meals (today only)
+  STATE.water = waterRes.data?.count || 0;
+  STATE.meals = mealsRes.data?.content || '';
+
+  // Generate plan
+  STATE.plan = generatePlan();
+
+  // Update header
+  const name = STATE.user.name;
+  document.getElementById('user-name').textContent = name.split(' ')[0];
+  document.getElementById('user-avatar').textContent =
+    name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+}
+
+/* Supabase save helpers — fire-and-forget alongside local STATE updates */
+async function dbSaveStatus(date, status) {
+  await sb.from('workout_statuses').upsert(
+    { user_id: STATE.user.id, date, status },
+    { onConflict: 'user_id,date' }
+  );
+}
+async function dbSaveMod(date, mod) {
+  await sb.from('workout_modifications').upsert(
+    { user_id: STATE.user.id, date, modification: mod },
+    { onConflict: 'user_id,date' }
+  );
+}
+async function dbSaveChat(msg) {
+  await sb.from('chat_messages').insert({ user_id: STATE.user.id, role: msg.role, text: msg.text });
+}
+async function dbSaveCheckin(obj) {
+  await sb.from('check_ins').insert({
+    user_id: STATE.user.id, date: obj.date,
+    weight: obj.weight, energy: obj.energy, meal: obj.meal,
+    challenges: obj.challenges, hunger: obj.hunger, sleep: obj.sleep,
+    sleep_hours: obj.sleepHours, sleep_issues: obj.sleepIssues,
+    training: obj.training, training_notes: obj.trainingNotes,
+    digestion: obj.digestion, stress: obj.stress, water: obj.water,
+    cravings: obj.cravings, went_well: obj.wentWell,
+    could_improve: obj.goBetter, questions: obj.questions,
+    score: obj.score,
+  });
+}
+async function dbSaveSettings(s) {
+  await sb.from('settings').upsert({
+    user_id: STATE.user.id, goal_weight: s.goalWeight, height: s.height,
+    goal: s.goal, protein: s.protein, carbs: s.carbs, fat: s.fat,
+    calories: s.calories, updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id' });
+}
+async function dbSaveWater(count) {
+  await sb.from('water_logs').upsert(
+    { user_id: STATE.user.id, date: TODAY_STR, count, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,date' }
+  );
+}
+async function dbSaveMeals(content) {
+  await sb.from('meal_logs').upsert(
+    { user_id: STATE.user.id, date: TODAY_STR, content, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,date' }
+  );
+}
+async function dbSaveProfile(profile) {
+  await sb.from('profiles').upsert({
+    id: STATE.user.id, name: profile.name,
+    age: profile.age ? parseInt(profile.age) : null,
+    height: profile.height, bodyweight: profile.bodyweight,
+    sex: profile.sex, experience: profile.experience,
+    training_days: parseInt(profile.trainingDays) || null,
+    session_duration: parseInt(profile.sessionDuration) || null,
+    primary_goal: profile.primaryGoal, secondary_goal: profile.secondaryGoal,
+    completed_at: profile.completedAt, updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' });
+}
+async function dbSavePRs(prs) {
+  const rows = PR_EXERCISES.filter(ex => prs[ex.key]).map(ex => ({
+    user_id: STATE.user.id, exercise_key: ex.key,
+    exercise_name: prs[ex.key].name, weight: prs[ex.key].weight,
+    reps: prs[ex.key].reps, estimated_1rm: prs[ex.key].estimated_1rm,
+    training_max: prs[ex.key].training_max, date: prs[ex.key].date,
+    confidence: prs[ex.key].confidence || 'confident',
+    updated_at: new Date().toISOString(),
+  }));
+  if (rows.length) await sb.from('personal_records').upsert(rows, { onConflict: 'user_id,exercise_key' });
 }
 
 /* ==========================================================
@@ -1516,6 +1676,7 @@ function selectDay(d){ STATE.selectedDay = d; renderMyPlan(); }
 function toggleComplete(d) {
   STATE.statuses[d] = STATE.statuses[d] === 'complete' ? 'pending' : 'complete';
   LS.set(KEYS.STATUSES, STATE.statuses);
+  dbSaveStatus(d, STATE.statuses[d]);
   toast(STATE.statuses[d] === 'complete' ? 'Workout completed — nice work!' : 'Marked pending');
   renderMyPlan(); renderDashboard(); renderCalendar(); renderProgress();
 }
@@ -1523,14 +1684,17 @@ function toggleEx(d, i) {
   STATE.mods[d] = STATE.mods[d] || {};
   STATE.mods[d]['done-'+i] = !STATE.mods[d]['done-'+i];
   LS.set(KEYS.MODS, STATE.mods);
+  dbSaveMod(d, STATE.mods[d]);
   renderMyPlan();
 }
 function aiModifyDay(d) {
   const day = STATE.plan[d];
   const note = `Coach AI suggests: swap one heavy compound for a lighter machine variant given your recent moderate energy and missed Wednesday. Reduce final set load by ~10% on ${day.exercises[0]?.name}.`;
   toast('AI suggestion added to Coach Chat.');
-  STATE.chat.push({ role:'coach', text:`I tuned ${day.title} (${formatDate(d)}) based on your check-in. ${note}` });
+  const msg = { role:'coach', text:`I tuned ${day.title} (${formatDate(d)}) based on your check-in. ${note}` };
+  STATE.chat.push(msg);
   LS.set(KEYS.CHAT, STATE.chat);
+  dbSaveChat(msg);
   renderChat();
 }
 
@@ -1638,13 +1802,17 @@ function sendMsg() {
   const text = inp.value.trim();
   if (!text) return;
   inp.value = '';
-  STATE.chat.push({ role:'user', text });
+  const userMsg = { role:'user', text };
+  STATE.chat.push(userMsg);
   LS.set(KEYS.CHAT, STATE.chat);
+  dbSaveChat(userMsg);
   renderChat();
   setTimeout(() => {
     const reply = processMessage(text);
-    STATE.chat.push({ role:'coach', text: reply });
+    const coachMsg = { role:'coach', text: reply };
+    STATE.chat.push(coachMsg);
     LS.set(KEYS.CHAT, STATE.chat);
+    dbSaveChat(coachMsg);
     renderChat();
   }, 400);
 }
@@ -1856,6 +2024,7 @@ function submitCheckin(e) {
   }
   STATE.checkins.push(obj);
   LS.set(KEYS.CHECKINS, STATE.checkins);
+  dbSaveCheckin(obj);
   toast('Check-in saved — recovery score updated');
   renderCheckIn(); renderDashboard(); renderProgress();
 }
@@ -2201,11 +2370,13 @@ function renderNutrition() {
 function toggleWater(i) {
   STATE.water = STATE.water === i ? i-1 : i;
   LS.set(KEYS.WATER + '.' + TODAY_STR, STATE.water);
+  dbSaveWater(STATE.water);
   renderNutrition();
 }
 function saveMeals(v) {
   STATE.meals = v;
   LS.set(KEYS.MEALS + '.' + TODAY_STR, v);
+  dbSaveMeals(v);
 }
 
 /* ==========================================================
@@ -2328,6 +2499,7 @@ function saveProfile() {
   STATE.user.name = document.getElementById('set-name').value || STATE.user.name;
   STATE.user.email = document.getElementById('set-email').value || STATE.user.email;
   LS.set(KEYS.AUTH, STATE.user);
+  dbSaveProfile({ name: STATE.user.name, email: STATE.user.email });
   document.getElementById('user-name').textContent = STATE.user.name.split(' ')[0];
   document.getElementById('user-avatar').textContent =
     STATE.user.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
@@ -2339,6 +2511,7 @@ function saveMetrics() {
   STATE.settings.height = document.getElementById('set-height').value || STATE.settings.height;
   STATE.settings.goal = document.getElementById('set-goal').value;
   LS.set(KEYS.SETTINGS, STATE.settings);
+  dbSaveSettings(STATE.settings);
   toast('Metrics saved');
 }
 function saveMacros() {
@@ -2347,6 +2520,7 @@ function saveMacros() {
   STATE.settings.fat = parseInt(document.getElementById('set-f').value) || 0;
   STATE.settings.calories = parseInt(document.getElementById('set-k').value) || 0;
   LS.set(KEYS.SETTINGS, STATE.settings);
+  dbSaveSettings(STATE.settings);
   toast('Macros saved');
   renderNutrition();
 }
@@ -2393,6 +2567,7 @@ function savePrFromCalc(name, w, r, e1rm, tm) {
   prs[key] = { name, weight:w, reps:r, estimated_1rm:e1rm, training_max:tm, date:TODAY_STR, confidence:'confident' };
   LS.set(KEYS.PRS, prs);
   STATE.prs = prs;
+  dbSavePRs(prs);
   toast(`PR saved: ${name} — TM ${tm} lbs`);
   renderProgress();
 }
