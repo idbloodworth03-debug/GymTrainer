@@ -411,6 +411,67 @@
     .stat-grid{grid-template-columns:repeat(2,1fr)}
     .plan-layout,.checkin-layout{grid-template-columns:1fr}
   }
+
+  /* ============== ONBOARDING ============== */
+  #onboard-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;
+    display:none;align-items:center;justify-content:center;
+  }
+  #onboard-overlay.show{display:flex}
+  .onboard-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    width:660px;max-width:96vw;max-height:93vh;overflow-y:auto;padding:36px 40px;
+  }
+  .onboard-progress{display:flex;gap:6px;margin-bottom:28px}
+  .onboard-pip{flex:1;height:4px;background:var(--border);border-radius:2px;transition:.3s}
+  .onboard-pip.done{background:var(--accent)}
+  .onboard-step{display:none}
+  .onboard-step.active{display:block}
+  .onboard-title{font-size:22px;font-weight:700;margin-bottom:6px}
+  .onboard-sub{color:var(--muted);margin-bottom:24px;font-size:14px;line-height:1.5}
+  .onboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .seg-group{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .seg-btn{
+    padding:7px 14px;border-radius:6px;border:1px solid var(--border);
+    font-size:13px;cursor:pointer;transition:.2s;background:var(--card2);color:var(--text);
+  }
+  .seg-btn:hover{border-color:var(--accent)}
+  .seg-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .goal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+  .goal-chip{
+    padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);
+    cursor:pointer;transition:.2s;text-align:left;background:var(--card2);
+  }
+  .goal-chip:hover{border-color:var(--accent)}
+  .goal-chip.active{border-color:var(--accent);background:rgba(229,62,62,.1)}
+  .goal-chip .gc-icon{font-size:20px;margin-bottom:6px}
+  .goal-chip .gc-name{font-weight:600;font-size:13px}
+  .goal-chip .gc-desc{font-size:11px;color:var(--muted);margin-top:2px}
+  .pr-row{
+    display:grid;grid-template-columns:150px 85px 75px 1fr;gap:10px;
+    align-items:center;padding:10px 0;border-bottom:1px solid var(--border);
+  }
+  .pr-row:last-child{border-bottom:none}
+  .pr-row label{font-size:13px;font-weight:500}
+  .pr-row input{padding:7px 10px}
+  .pr-calc{font-size:12px;color:var(--muted);line-height:1.6}
+  .pr-calc strong{color:var(--accent2);display:block;font-size:13px}
+  .pr-row-header{
+    display:grid;grid-template-columns:150px 85px 75px 1fr;gap:10px;
+    padding:8px 0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
+    border-bottom:1px solid var(--border);margin-bottom:4px;
+  }
+  .onboard-footer{display:flex;gap:10px;margin-top:24px;justify-content:flex-end}
+  .pr-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .pr-table th{
+    font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
+    padding:8px;text-align:left;border-bottom:1px solid var(--border);
+  }
+  .pr-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+  .pr-table tr:last-child td{border-bottom:none}
+  .pr-val{font-weight:600;font-size:15px}
+  .tm-val{color:var(--accent2);font-weight:600}
+  .pr-empty{text-align:center;padding:32px;color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
@@ -432,6 +493,141 @@
       <button class="auth-btn" id="auth-submit">Log In</button>
       <div class="auth-switch">
         <span id="auth-toggle">Need an account? Sign up</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== ONBOARDING ============== -->
+<div id="onboard-overlay">
+  <div class="onboard-card">
+    <div class="onboard-progress" id="ob-pips"></div>
+
+    <!-- Step 1: Basic Info -->
+    <div class="onboard-step active" id="ob-step-1">
+      <div class="onboard-title">Let's personalize your training.</div>
+      <div class="onboard-sub">A few quick details so your AI Coach can calibrate your plan, weights, and recommendations.</div>
+      <div class="onboard-grid">
+        <div class="form-q"><label>Full Name</label><input id="ob-name" placeholder="Tommy Vulpescu" /></div>
+        <div class="form-q"><label>Age</label><input id="ob-age" type="number" placeholder="22" /></div>
+        <div class="form-q"><label>Height</label><input id="ob-height" placeholder='5&apos;10"' /></div>
+        <div class="form-q"><label>Bodyweight (lbs)</label><input id="ob-bw" type="number" placeholder="190" /></div>
+      </div>
+      <div class="form-q" style="margin-bottom:14px">
+        <label>Sex</label>
+        <div class="seg-group" id="ob-sex-grp">
+          <button class="seg-btn active" data-val="Male" onclick="obSeg('ob-sex-grp',this)">Male</button>
+          <button class="seg-btn" data-val="Female" onclick="obSeg('ob-sex-grp',this)">Female</button>
+          <button class="seg-btn" data-val="Other" onclick="obSeg('ob-sex-grp',this)">Other</button>
+        </div>
+      </div>
+      <div class="form-q" style="margin-bottom:14px">
+        <label>Training Experience</label>
+        <div class="seg-group" id="ob-exp-grp">
+          <button class="seg-btn" data-val="Beginner" onclick="obSeg('ob-exp-grp',this)">Beginner &lt;1 yr</button>
+          <button class="seg-btn active" data-val="Intermediate" onclick="obSeg('ob-exp-grp',this)">Intermediate 1-3 yr</button>
+          <button class="seg-btn" data-val="Advanced" onclick="obSeg('ob-exp-grp',this)">Advanced 3+ yr</button>
+        </div>
+      </div>
+      <div class="form-q" style="margin-bottom:14px">
+        <label>Days Available to Train Per Week</label>
+        <div class="seg-group" id="ob-days-grp">
+          <button class="seg-btn" data-val="3" onclick="obSeg('ob-days-grp',this)">3</button>
+          <button class="seg-btn" data-val="4" onclick="obSeg('ob-days-grp',this)">4</button>
+          <button class="seg-btn active" data-val="5" onclick="obSeg('ob-days-grp',this)">5</button>
+          <button class="seg-btn" data-val="6" onclick="obSeg('ob-days-grp',this)">6</button>
+        </div>
+      </div>
+      <div class="form-q" style="margin-bottom:6px">
+        <label>Average Session Duration</label>
+        <div class="seg-group" id="ob-dur-grp">
+          <button class="seg-btn" data-val="30" onclick="obSeg('ob-dur-grp',this)">30 min</button>
+          <button class="seg-btn" data-val="45" onclick="obSeg('ob-dur-grp',this)">45 min</button>
+          <button class="seg-btn active" data-val="60" onclick="obSeg('ob-dur-grp',this)">60 min</button>
+          <button class="seg-btn" data-val="90" onclick="obSeg('ob-dur-grp',this)">90+ min</button>
+        </div>
+      </div>
+      <div class="onboard-footer">
+        <button class="btn primary" onclick="obNext()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Goals -->
+    <div class="onboard-step" id="ob-step-2">
+      <div class="onboard-title">What's your primary goal?</div>
+      <div class="onboard-sub">Your AI Coach will tailor every session around this. You can update it anytime in Settings.</div>
+      <div class="goal-grid">
+        <div class="goal-chip active" data-val="Build Muscle" onclick="obGoal(this)">
+          <div class="gc-icon">🏋️</div><div class="gc-name">Build Muscle</div>
+          <div class="gc-desc">Maximize hypertrophy and size</div>
+        </div>
+        <div class="goal-chip" data-val="Gain Strength" onclick="obGoal(this)">
+          <div class="gc-icon">💪</div><div class="gc-name">Gain Strength</div>
+          <div class="gc-desc">Increase your 1RMs over time</div>
+        </div>
+        <div class="goal-chip" data-val="Lose Fat" onclick="obGoal(this)">
+          <div class="gc-icon">🔥</div><div class="gc-name">Lose Fat</div>
+          <div class="gc-desc">Reduce body fat, preserve muscle</div>
+        </div>
+        <div class="goal-chip" data-val="Athletic Performance" onclick="obGoal(this)">
+          <div class="gc-icon">⚡</div><div class="gc-name">Athletic Performance</div>
+          <div class="gc-desc">Speed, power, conditioning</div>
+        </div>
+        <div class="goal-chip" data-val="Body Recomposition" onclick="obGoal(this)">
+          <div class="gc-icon">⚖️</div><div class="gc-name">Body Recomposition</div>
+          <div class="gc-desc">Build muscle while losing fat</div>
+        </div>
+        <div class="goal-chip" data-val="General Fitness" onclick="obGoal(this)">
+          <div class="gc-icon">🏃</div><div class="gc-name">General Fitness</div>
+          <div class="gc-desc">Overall health and wellness</div>
+        </div>
+        <div class="goal-chip" data-val="Competition Prep" onclick="obGoal(this)">
+          <div class="gc-icon">🥇</div><div class="gc-name">Competition Prep</div>
+          <div class="gc-desc">Peak for a specific event or show</div>
+        </div>
+        <div class="goal-chip" data-val="Sport-Specific" onclick="obGoal(this)">
+          <div class="gc-icon">🎯</div><div class="gc-name">Sport-Specific</div>
+          <div class="gc-desc">Training for a specific sport</div>
+        </div>
+      </div>
+      <div class="form-q" style="margin-bottom:6px">
+        <label>Secondary Goal (optional)</label>
+        <select id="ob-goal2">
+          <option value="">— none —</option>
+          <option>Stay Lean</option><option>Build Muscle</option><option>Gain Strength</option>
+          <option>Improve Conditioning</option><option>Increase Mobility</option><option>Lose Fat</option>
+        </select>
+      </div>
+      <div class="onboard-footer">
+        <button class="btn secondary sm" onclick="obBack()">← Back</button>
+        <button class="btn primary" onclick="obNext()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: PRs -->
+    <div class="onboard-step" id="ob-step-3">
+      <div class="onboard-title">Your Personal Records</div>
+      <div class="onboard-sub">Enter a recent set for each lift — we'll calculate your estimated 1RM and training max (90%). Skip anything you don't have.</div>
+      <div class="pr-row-header">
+        <span>Exercise</span><span>Weight (lbs)</span><span>Reps</span><span>Est. 1RM / Training Max</span>
+      </div>
+      <div id="ob-pr-rows"></div>
+      <div class="onboard-footer">
+        <button class="btn secondary sm" onclick="obBack()">← Back</button>
+        <button class="btn primary" onclick="obFinish()">Complete Setup →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Done -->
+    <div class="onboard-step" id="ob-step-4">
+      <div style="text-align:center;padding:16px 0 24px">
+        <div style="font-size:52px;margin-bottom:16px">🎯</div>
+        <div class="onboard-title" id="ob-done-title">You're all set!</div>
+        <div class="onboard-sub" style="margin-bottom:0">Your training maxes are calibrated. Your AI Coach is ready.</div>
+      </div>
+      <div id="ob-tm-summary"></div>
+      <div class="onboard-footer" style="justify-content:center;margin-top:28px">
+        <button class="btn primary" style="padding:12px 36px;font-size:15px" onclick="obComplete()">Start Training →</button>
       </div>
     </div>
   </div>
@@ -651,6 +847,8 @@ const LS = {
 
 const KEYS = {
   AUTH:'vanta.auth',
+  PROFILE:'vanta.profile',
+  PRS:'vanta.prs',
   STATUSES:'vanta.statuses',
   MODS:'vanta.mods',
   CHECKINS:'vanta.checkins',
@@ -659,6 +857,54 @@ const KEYS = {
   SETTINGS:'vanta.settings',
   CHAT:'vanta.chat',
 };
+
+/* ==========================================================
+   PR SYSTEM
+========================================================== */
+const PR_EXERCISES = [
+  { key:'bench_press',  label:'Bench Press',      aliases:['bench press','flat bench','barbell bench','incline db squeeze press','push movement','chest press','flat press'] },
+  { key:'squat',        label:'Back Squat',        aliases:['back squat','barbell squat','squat','pendulum squat','hack squat'] },
+  { key:'deadlift',     label:'Deadlift',          aliases:['deadlift','rack pulls','trap bar deadlift','rack pull'] },
+  { key:'ohp',          label:'Overhead Press',    aliases:['overhead press','shoulder press','ohp','military press','smith machine shoulder press'] },
+  { key:'pullups',      label:'Pull-Ups',          aliases:['pull-ups','pull ups','pullups','wide grip pulldowns','pulldown'] },
+  { key:'row',          label:'Barbell Row',       aliases:['barbell row','seated rows','bent over row','t-bar row','chest supported row'] },
+  { key:'leg_press',    label:'Leg Press',         aliases:['leg press'] },
+  { key:'rdl',          label:'Romanian Deadlift', aliases:['rdl','romanian deadlift','rdls','dumbbell rdl','barbell rdl','laying hamstring curl'] },
+];
+
+function calcE1RM(weight, reps) {
+  // Spec formula: Weight × (1 + Reps / 30)
+  return Math.round(weight * (1 + reps / 30));
+}
+
+function calcTrainingMax(e1rm) {
+  return roundToGymIncrement(e1rm * 0.90);
+}
+
+function roundToGymIncrement(weight) {
+  // Round to nearest 2.5 lbs
+  return Math.round(weight / 2.5) * 2.5;
+}
+
+function getPR(exerciseName) {
+  const prs = LS.get(KEYS.PRS, {});
+  const name = exerciseName.toLowerCase();
+  for (const ex of PR_EXERCISES) {
+    if (ex.aliases.some(a => name.includes(a))) {
+      return prs[ex.key] || null;
+    }
+  }
+  return null;
+}
+
+function getTrainingWeight(exerciseName, pctStr) {
+  const pct = parseFloat(pctStr) / 100;
+  if (!pct) return pctStr;
+  const pr = getPR(exerciseName);
+  if (!pr || !pr.training_max) return pctStr;
+  const w = roundToGymIncrement(pr.training_max * pct);
+  return `${w} lbs (${pctStr})`;
+}
 
 /* ==========================================================
    PLAN GENERATION
@@ -719,6 +965,8 @@ function seedCheckins() {
 const STATE = {
   user: null,
   authMode: 'login',
+  profile: null,
+  prs: {},
   plan: {},
   statuses: {},
   mods: {},
@@ -790,6 +1038,158 @@ function enterApp() {
     name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
   initData();
   renderAll();
+  // Show onboarding for new users
+  if (!LS.get(KEYS.PROFILE, null)) {
+    document.getElementById('ob-name').value = name;
+    showOnboarding(1);
+  }
+}
+
+/* ==========================================================
+   ONBOARDING
+========================================================== */
+let obStep = 1;
+const OB_STEPS = 4;
+
+function showOnboarding(step) {
+  obStep = step || 1;
+  const overlay = document.getElementById('onboard-overlay');
+  overlay.classList.add('show');
+  renderObPips();
+  renderObPrRows();
+  goObStep(obStep);
+}
+
+function renderObPips() {
+  document.getElementById('ob-pips').innerHTML =
+    Array.from({length:OB_STEPS}, (_,i) =>
+      `<div class="onboard-pip${i < obStep ? ' done' : ''}"></div>`
+    ).join('');
+}
+
+function goObStep(n) {
+  document.querySelectorAll('.onboard-step').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(`ob-step-${n}`);
+  if (el) el.classList.add('active');
+  renderObPips();
+}
+
+function obNext() {
+  if (obStep < OB_STEPS - 1) { obStep++; goObStep(obStep); }
+}
+
+function obBack() {
+  if (obStep > 1) { obStep--; goObStep(obStep); }
+}
+
+function obSeg(groupId, btn) {
+  document.querySelectorAll(`#${groupId} .seg-btn`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function obGoal(chip) {
+  document.querySelectorAll('.goal-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+}
+
+function renderObPrRows() {
+  const prs = LS.get(KEYS.PRS, {});
+  document.getElementById('ob-pr-rows').innerHTML = PR_EXERCISES.map(ex => {
+    const saved = prs[ex.key];
+    return `<div class="pr-row">
+      <label>${ex.label}</label>
+      <input type="number" id="ob-w-${ex.key}" placeholder="lbs" value="${saved?.weight||''}"
+        oninput="obCalcPr('${ex.key}')"/>
+      <input type="number" id="ob-r-${ex.key}" placeholder="reps" value="${saved?.reps||''}"
+        oninput="obCalcPr('${ex.key}')"/>
+      <div class="pr-calc" id="ob-calc-${ex.key}">${saved
+        ? `<strong>${saved.estimated_1rm} lbs</strong>TM: ${saved.training_max} lbs`
+        : '—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function obCalcPr(key) {
+  const w = parseFloat(document.getElementById(`ob-w-${key}`)?.value);
+  const r = parseInt(document.getElementById(`ob-r-${key}`)?.value);
+  const out = document.getElementById(`ob-calc-${key}`);
+  if (!out) return;
+  if (w && r && r >= 1) {
+    const e1rm = calcE1RM(w, r);
+    const tm = calcTrainingMax(e1rm);
+    out.innerHTML = `<strong>${e1rm} lbs</strong>TM: ${tm} lbs`;
+  } else {
+    out.textContent = '—';
+  }
+}
+
+function obFinish() {
+  // Collect basic info
+  const profile = {
+    name: document.getElementById('ob-name').value || STATE.user.name,
+    age: document.getElementById('ob-age').value,
+    height: document.getElementById('ob-height').value,
+    bodyweight: parseFloat(document.getElementById('ob-bw').value) || null,
+    sex: document.querySelector('#ob-sex-grp .seg-btn.active')?.dataset.val || 'Male',
+    experience: document.querySelector('#ob-exp-grp .seg-btn.active')?.dataset.val || 'Intermediate',
+    trainingDays: document.querySelector('#ob-days-grp .seg-btn.active')?.dataset.val || '5',
+    sessionDuration: document.querySelector('#ob-dur-grp .seg-btn.active')?.dataset.val || '60',
+    primaryGoal: document.querySelector('.goal-chip.active')?.dataset.val || 'Build Muscle',
+    secondaryGoal: document.getElementById('ob-goal2')?.value || '',
+    completedAt: TODAY_STR,
+  };
+
+  // Collect PRs
+  const prs = {};
+  for (const ex of PR_EXERCISES) {
+    const w = parseFloat(document.getElementById(`ob-w-${ex.key}`)?.value);
+    const r = parseInt(document.getElementById(`ob-r-${ex.key}`)?.value);
+    if (w && r && r >= 1) {
+      const e1rm = calcE1RM(w, r);
+      const tm = calcTrainingMax(e1rm);
+      prs[ex.key] = { name: ex.label, weight:w, reps:r, estimated_1rm:e1rm, training_max:tm, date:TODAY_STR, confidence:'confident' };
+    }
+  }
+
+  LS.set(KEYS.PROFILE, profile);
+  LS.set(KEYS.PRS, prs);
+  STATE.profile = profile;
+  STATE.prs = prs;
+
+  // Update user name if changed
+  if (profile.name && profile.name !== STATE.user.name) {
+    STATE.user.name = profile.name;
+    LS.set(KEYS.AUTH, STATE.user);
+  }
+
+  // Update settings goal
+  STATE.settings.goal = profile.primaryGoal;
+  LS.set(KEYS.SETTINGS, STATE.settings);
+
+  // Build summary
+  const tmLines = PR_EXERCISES
+    .filter(ex => prs[ex.key])
+    .map(ex => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span>${ex.label}</span>
+      <span><strong>${prs[ex.key].estimated_1rm} lbs</strong> &nbsp;
+      <span style="color:var(--muted)">TM: </span><span style="color:var(--accent2)">${prs[ex.key].training_max} lbs</span></span>
+    </div>`).join('');
+
+  document.getElementById('ob-done-title').textContent = `You're all set, ${profile.name.split(' ')[0]}!`;
+  document.getElementById('ob-tm-summary').innerHTML = tmLines
+    ? `<div class="card" style="padding:16px"><div class="card-title">Your Training Maxes</div>${tmLines}</div>`
+    : `<p style="color:var(--muted);text-align:center">No PRs entered — weights will show as progressive targets. You can add PRs anytime in Settings.</p>`;
+
+  obStep = 4;
+  goObStep(4);
+  renderAll();
+}
+
+function obComplete() {
+  document.getElementById('onboard-overlay').classList.remove('show');
+  toast(`Welcome to Vanta, ${STATE.profile?.name?.split(' ')[0] || 'Athlete'}! Your plan is ready.`);
+  renderProgress();
+  renderSettings();
 }
 
 function initData() {
@@ -799,6 +1199,8 @@ function initData() {
   STATE.checkins = seedCheckins();
   STATE.water = LS.get(KEYS.WATER + '.' + TODAY_STR, 0);
   STATE.meals = LS.get(KEYS.MEALS + '.' + TODAY_STR, '');
+  STATE.profile = LS.get(KEYS.PROFILE, null);
+  STATE.prs = LS.get(KEYS.PRS, {});
   STATE.settings = LS.get(KEYS.SETTINGS, {
     goalWeight: 185,
     height: '5\'10"',
@@ -1682,6 +2084,37 @@ function renderProgress() {
         }
       </div>
     </div>
+
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="card-title" style="margin:0">Personal Records & Training Maxes</div>
+        <button class="btn secondary sm" onclick="switchTab('settings');setTimeout(()=>document.getElementById('orm-name')?.focus(),200)">+ Add PR</button>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:14px">
+        Est. 1RM = Weight × (1 + Reps/30) &nbsp;•&nbsp; Training Max = Est. 1RM × 90%
+      </p>
+      ${(()=>{
+        const prs = STATE.prs || {};
+        const rows = PR_EXERCISES.filter(ex => prs[ex.key]).map(ex => {
+          const p = prs[ex.key];
+          return `<tr>
+            <td><strong>${ex.label}</strong></td>
+            <td>${p.weight} lbs × ${p.reps}</td>
+            <td class="pr-val">${p.estimated_1rm} lbs</td>
+            <td class="tm-val">${p.training_max} lbs</td>
+            <td style="color:var(--muted);font-size:12px">${p.date||''}</td>
+          </tr>`;
+        }).join('');
+        return rows ? `
+          <table class="pr-table">
+            <thead><tr><th>Exercise</th><th>Best Set</th><th>Est. 1RM</th><th>Training Max</th><th>Date</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>` :
+          `<div class="pr-empty">No PRs logged yet.<br>
+            <button class="btn primary sm" style="margin-top:12px" onclick="document.getElementById('onboard-overlay').classList.add('show');obStep=3;goObStep(3)">Enter PRs Now</button>
+          </div>`;
+      })()}
+    </div>
   `;
 }
 
@@ -1836,7 +2269,30 @@ function renderSettings() {
     </div>
 
     <div class="card" style="margin-bottom:16px">
-      <div class="card-title">1RM Calculator (Brzycki)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="card-title" style="margin:0">Personal Records</div>
+        <button class="btn secondary sm" onclick="document.getElementById('onboard-overlay').classList.add('show');obStep=3;goObStep(3)">Edit PRs</button>
+      </div>
+      ${(()=>{
+        const prs = STATE.prs || {};
+        const rows = PR_EXERCISES.filter(ex => prs[ex.key]).map(ex => {
+          const p = prs[ex.key];
+          return `<tr>
+            <td><strong>${ex.label}</strong></td>
+            <td>${p.weight} lbs × ${p.reps}</td>
+            <td class="pr-val">${p.estimated_1rm} lbs</td>
+            <td class="tm-val">${p.training_max} lbs</td>
+          </tr>`;
+        }).join('');
+        return rows ? `<table class="pr-table" style="margin-bottom:10px">
+          <thead><tr><th>Exercise</th><th>Best Set</th><th>Est. 1RM</th><th>Training Max</th></tr></thead>
+          <tbody>${rows}</tbody></table>` :
+          `<p style="color:var(--muted);font-size:13px;margin-bottom:10px">No PRs entered yet.</p>`;
+      })()}
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">1RM Calculator</div>
       <div class="settings-grid">
         <div class="form-q">
           <label>Exercise</label>
@@ -1895,21 +2351,50 @@ function saveMacros() {
   renderNutrition();
 }
 function calcOrm() {
-  const name = document.getElementById('orm-name').value || 'Exercise';
+  const name = document.getElementById('orm-name').value.trim() || 'Exercise';
   const w = parseFloat(document.getElementById('orm-weight').value);
   const r = parseInt(document.getElementById('orm-reps').value);
-  if (!w || !r || r < 1 || r > 36) {
+  if (!w || !r || r < 1) {
     return document.getElementById('orm-out').innerHTML =
-      '<p style="color:var(--danger);margin-top:10px">Enter valid weight and reps (1-36).</p>';
+      '<p style="color:var(--danger);margin-top:10px">Enter valid weight and reps.</p>';
   }
-  const orm = Math.round(w * (36 / (37 - r)));
+  const e1rm = calcE1RM(w, r);
+  const tm = calcTrainingMax(e1rm);
+  // Build percentage table
+  const pcts = [60,65,70,75,80,85,90,95];
+  const pctRows = pcts.map(p =>
+    `<tr><td>${p}%</td><td>${roundToGymIncrement(tm * p/100)} lbs</td></tr>`
+  ).join('');
   document.getElementById('orm-out').innerHTML = `
     <div class="orm-result">
-      <div style="color:var(--muted);font-size:12px;text-transform:uppercase">${name} Estimated 1RM</div>
-      <strong>${orm} lbs</strong>
-      <div style="color:var(--muted);font-size:12px;margin-top:6px">Brzycki formula • from ${w} × ${r}</div>
+      <div style="color:var(--muted);font-size:12px;text-transform:uppercase">${name}</div>
+      <strong>${e1rm} lbs</strong>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">
+        Training Max (90%): <span style="color:var(--accent2);font-weight:600">${tm} lbs</span>
+      </div>
+      <div style="color:var(--muted);font-size:11px;margin-top:2px">Formula: ${w} × (1 + ${r}/30) • rounded to 2.5 lb increments</div>
+      <table class="pr-table" style="margin-top:14px;margin-bottom:12px">
+        <thead><tr><th>%</th><th>Working Weight</th></tr></thead>
+        <tbody>${pctRows}</tbody>
+      </table>
+      <button class="btn primary sm" onclick="savePrFromCalc('${name.replace(/'/g,"\\'")}',${w},${r},${e1rm},${tm})">Save as PR</button>
     </div>
   `;
+}
+
+function savePrFromCalc(name, w, r, e1rm, tm) {
+  const prs = LS.get(KEYS.PRS, {});
+  // Find matching key or create slug
+  let key = null;
+  for (const ex of PR_EXERCISES) {
+    if (ex.aliases.some(a => name.toLowerCase().includes(a))) { key = ex.key; break; }
+  }
+  if (!key) key = name.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
+  prs[key] = { name, weight:w, reps:r, estimated_1rm:e1rm, training_max:tm, date:TODAY_STR, confidence:'confident' };
+  LS.set(KEYS.PRS, prs);
+  STATE.prs = prs;
+  toast(`PR saved: ${name} — TM ${tm} lbs`);
+  renderProgress();
 }
 
 /* ==========================================================
