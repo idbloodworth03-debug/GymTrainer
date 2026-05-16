@@ -109,6 +109,8 @@
   .btn.success{background:var(--success);color:#0c2017}
   .btn.danger{background:var(--danger);color:#fff}
   .btn.ghost{background:transparent;border:1px solid var(--border)}
+  .btn.secondary{background:var(--card2);color:var(--muted);border:1px solid var(--border)}
+  .btn.secondary:hover{color:var(--text);background:var(--border)}
   .btn.sm{padding:5px 10px;font-size:12px}
 
   .badge{
@@ -652,7 +654,7 @@
     <div class="user-chip">
       <div class="avatar" id="user-avatar">TV</div>
       <span id="user-name">Tommy</span>
-      <button class="logout" id="logout-btn" onclick="sb.auth.signOut()">Log out</button>
+      <button class="logout" id="logout-btn">Log out</button>
     </div>
   </header>
 
@@ -992,6 +994,11 @@ const STATE = {
 /* ==========================================================
    AUTH
 ========================================================== */
+// Detect email confirmation redirect (Supabase puts type=signup in URL hash)
+const _hashParams = new URLSearchParams(window.location.hash.slice(1));
+const _isEmailConfirmation = _hashParams.get('type') === 'signup';
+if (_isEmailConfirmation) history.replaceState(null, '', window.location.pathname);
+
 const authScreen = document.getElementById('auth-screen');
 const app = document.getElementById('app');
 const authSubmit = document.getElementById('auth-submit');
@@ -1051,6 +1058,14 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 // Supabase auth state handler — single source of truth for login/logout
 sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
+    // If this sign-in came from clicking the confirmation email link,
+    // sign back out and send them to the login screen with a success message.
+    if (_isEmailConfirmation && event === 'SIGNED_IN') {
+      await sb.auth.signOut();
+      STATE.authMode = 'login';
+      showAuthScreen('Email confirmed! You can now log in.');
+      return;
+    }
     const u = session.user;
     STATE.user = {
       id: u.id,
@@ -1062,7 +1077,6 @@ sb.auth.onAuthStateChange(async (event, session) => {
     await loadAllUserData();
     renderAll();
     if (!STATE.profile) {
-      document.getElementById('ob-name').value = STATE.user.name;
       showOnboarding(1);
     }
   } else {
@@ -1079,6 +1093,24 @@ async function tryAutoLogin() {
   // Session is restored automatically by onAuthStateChange — nothing needed here
 }
 
+function showAuthScreen(message) {
+  app.classList.remove('show');
+  authScreen.style.display = 'flex';
+  const btn = document.getElementById('auth-submit');
+  btn.textContent = 'Log In';
+  btn.disabled = false;
+  if (message) {
+    let notice = document.getElementById('auth-notice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'auth-notice';
+      notice.style.cssText = 'color:var(--success);font-size:13px;text-align:center;margin-top:10px;padding:10px;background:rgba(62,207,142,.1);border-radius:8px;';
+      document.querySelector('.auth-card').appendChild(notice);
+    }
+    notice.textContent = message;
+  }
+}
+
 /* ==========================================================
    ONBOARDING
 ========================================================== */
@@ -1089,6 +1121,9 @@ function showOnboarding(step) {
   obStep = step || 1;
   const overlay = document.getElementById('onboard-overlay');
   overlay.classList.add('show');
+  // Safe to set ob-name now — overlay is in DOM
+  const nameEl = document.getElementById('ob-name');
+  if (nameEl && STATE.user?.name) nameEl.value = STATE.user.name;
   renderObPips();
   renderObPrRows();
   goObStep(obStep);
@@ -1109,7 +1144,7 @@ function goObStep(n) {
 }
 
 function obNext() {
-  if (obStep < OB_STEPS - 1) { obStep++; goObStep(obStep); }
+  if (obStep < OB_STEPS) { obStep++; goObStep(obStep); }
 }
 
 function obBack() {
@@ -1248,6 +1283,7 @@ async function loadAllUserData() {
   ]);
 
   // Profile
+  if (profileRes.error) console.warn('profiles load error:', profileRes.error.message);
   STATE.profile = profileRes.data || null;
 
   // PRs — convert array to keyed object
@@ -2368,7 +2404,7 @@ function renderNutrition() {
   `;
 }
 function toggleWater(i) {
-  STATE.water = STATE.water === i ? i-1 : i;
+  STATE.water = STATE.water === i ? 0 : i;
   LS.set(KEYS.WATER + '.' + TODAY_STR, STATE.water);
   dbSaveWater(STATE.water);
   renderNutrition();
@@ -2499,7 +2535,9 @@ function saveProfile() {
   STATE.user.name = document.getElementById('set-name').value || STATE.user.name;
   STATE.user.email = document.getElementById('set-email').value || STATE.user.email;
   LS.set(KEYS.AUTH, STATE.user);
-  dbSaveProfile({ name: STATE.user.name, email: STATE.user.email });
+  // Merge name update into profile record
+  const profileUpdate = { ...(STATE.profile || {}), name: STATE.user.name, completedAt: STATE.profile?.completedAt || TODAY_STR };
+  dbSaveProfile(profileUpdate);
   document.getElementById('user-name').textContent = STATE.user.name.split(' ')[0];
   document.getElementById('user-avatar').textContent =
     STATE.user.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
@@ -2551,9 +2589,10 @@ function calcOrm() {
         <thead><tr><th>%</th><th>Working Weight</th></tr></thead>
         <tbody>${pctRows}</tbody>
       </table>
-      <button class="btn primary sm" onclick="savePrFromCalc('${name.replace(/'/g,"\\'")}',${w},${r},${e1rm},${tm})">Save as PR</button>
+      <button class="btn primary sm" id="save-pr-btn">Save as PR</button>
     </div>
   `;
+  document.getElementById('save-pr-btn').addEventListener('click', () => savePrFromCalc(name, w, r, e1rm, tm));
 }
 
 function savePrFromCalc(name, w, r, e1rm, tm) {
