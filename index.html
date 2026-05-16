@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AILift — Your AI Gym Trainer</title>
+<title>Vanta — AI Coaching Platform</title>
 <style>
   :root {
-    --bg:#0f1117; --surface:#161920; --card:#1e2130; --card2:#252840;
-    --accent:#6c63ff; --accent2:#ff6584; --success:#3ecf8e;
-    --warning:#f5a623; --danger:#ef4444; --info:#38bdf8;
-    --text:#e8eaf0; --muted:#7a7f9a; --border:#2a2e45;
+    --bg:#0b0b0d; --surface:#111114; --card:#18181b; --card2:#27272a;
+    --accent:#e53e3e; --accent2:#fc8181; --success:#3ecf8e;
+    --warning:#f5a623; --danger:#c53030; --info:#94a3b8;
+    --text:#f4f4f5; --muted:#71717a; --border:#3f3f46;
     --radius:12px; --radius-sm:8px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -32,7 +32,7 @@
   /* ============== AUTH ============== */
   #auth-screen{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 30% 20%,#1a1f3a 0%,var(--bg) 70%);
+    background:radial-gradient(circle at 30% 20%,#1a0808 0%,var(--bg) 70%);
     z-index:1000;
   }
   .auth-card{
@@ -120,13 +120,13 @@
   .badge.danger{background:rgba(239,68,68,.15);color:var(--danger)}
   .badge.info{background:rgba(56,189,248,.15);color:var(--info)}
   .badge.muted{background:var(--card2);color:var(--muted)}
-  .badge.accent{background:rgba(108,99,255,.18);color:#a59cff}
+  .badge.accent{background:rgba(229,62,62,.18);color:#fc8181}
 
   .technique{
     display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;
     letter-spacing:.4px;margin-right:4px;
   }
-  .technique.SUPERSET{background:rgba(168,85,247,.18);color:#c4a8ff}
+  .technique.SUPERSET{background:rgba(229,62,62,.18);color:#fc8181}
   .technique.DROP_SET{background:rgba(245,166,35,.18);color:var(--warning)}
   .technique.BURNOUT{background:rgba(239,68,68,.18);color:#ff8c8c}
   .technique.ISO_HOLD{background:rgba(20,184,166,.18);color:#5eead4}
@@ -418,7 +418,7 @@
 <!-- ============== AUTH ============== -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">AILift</div>
+    <div class="auth-logo">Vanta</div>
     <div class="auth-tag">Your AI-powered gym trainer</div>
     <div class="auth-form">
       <div id="signup-fields" style="display:none">
@@ -440,7 +440,7 @@
 <!-- ============== APP ============== -->
 <div id="app">
   <header class="topbar">
-    <div class="logo">AILift</div>
+    <div class="logo">Vanta</div>
     <nav class="tabs" id="nav-tabs">
       <button data-tab="dashboard" class="active">Dashboard</button>
       <button data-tab="myplan">My Plan</button>
@@ -650,14 +650,14 @@ const LS = {
 };
 
 const KEYS = {
-  AUTH:'ailift.auth',
-  STATUSES:'ailift.statuses',
-  MODS:'ailift.mods',
-  CHECKINS:'ailift.checkins',
-  WATER:'ailift.water',
-  MEALS:'ailift.meals',
-  SETTINGS:'ailift.settings',
-  CHAT:'ailift.chat',
+  AUTH:'vanta.auth',
+  STATUSES:'vanta.statuses',
+  MODS:'vanta.mods',
+  CHECKINS:'vanta.checkins',
+  WATER:'vanta.water',
+  MEALS:'vanta.meals',
+  SETTINGS:'vanta.settings',
+  CHAT:'vanta.chat',
 };
 
 /* ==========================================================
