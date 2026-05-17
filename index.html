@@ -753,8 +753,8 @@ const SPLIT_TEMPLATE = {
   5: { name:'Arms (Repeat)', type:'Triceps & Biceps', goal:'', exercises:[] },
   6: { name:'Rest Day', type:'Recovery', goal:'Recover, hydrate, sleep, eat well', exercises:[] },
 };
-SPLIT_TEMPLATE[4] = { ...SPLIT_TEMPLATE[1], name:'Chest & Shoulders (Repeat)' };
-SPLIT_TEMPLATE[5] = { ...SPLIT_TEMPLATE[2], name:'Arms (Repeat)' };
+SPLIT_TEMPLATE[4] = { ...SPLIT_TEMPLATE[1], name:'Chest & Shoulders (Repeat)', exercises: JSON.parse(JSON.stringify(SPLIT_TEMPLATE[1].exercises)) };
+SPLIT_TEMPLATE[5] = { ...SPLIT_TEMPLATE[2], name:'Arms (Repeat)', exercises: JSON.parse(JSON.stringify(SPLIT_TEMPLATE[2].exercises)) };
 
 const EXERCISE_LIBRARY = [
   { id:'pec-dec', name:'Pec Dec', muscle:'Chest', equipment:'Machine', difficulty:'Beginner', sets:'4', reps:'8-12', tempo:'2-1-2', rest:'60-90s', cues:['Squeeze chest at peak contraction','Keep shoulders down and back','Slight elbow bend'], notes:'Great isolation movement. Pair with rear delt for superset.', alternatives:['Cable Flyes','DB Flyes'], tags:['Isolation','Superset'] },
@@ -977,7 +977,7 @@ const STATE = {
   authMode: 'login',
   profile: null,
   prs: {},
-  plan: {},
+  plan: generatePlan(),
   statuses: {},
   mods: {},
   checkins: [],
@@ -1614,7 +1614,11 @@ function renderDashboard() {
 ========================================================== */
 function renderMyPlan() {
   const days = Object.keys(STATE.plan).sort();
-  if (!STATE.plan[STATE.selectedDay]) STATE.selectedDay = TODAY_STR;
+  if (!STATE.plan[STATE.selectedDay]) STATE.selectedDay = days[0] || TODAY_STR;
+  if (!STATE.plan[STATE.selectedDay]) {
+    document.getElementById('panel-myplan').innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Loading your plan…</div>';
+    return;
+  }
 
   const sidebar = days.map(d => {
     const p = STATE.plan[d];
