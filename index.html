@@ -489,12 +489,13 @@
     <div class="auth-form">
       <div id="signup-fields" style="display:none">
         <label>Full Name</label>
-        <input type="text" id="su-name" placeholder="Tommy Vulpescu" />
+        <input type="text" id="su-name" placeholder="Your full name" />
       </div>
       <label>Email</label>
-      <input type="email" id="au-email" placeholder="you@example.com" value="tommy@example.com" />
+      <input type="email" id="au-email" placeholder="you@example.com" />
       <label>Password</label>
-      <input type="password" id="au-password" placeholder="••••••••" value="demo1234" />
+      <input type="password" id="au-password" placeholder="••••••••" />
+      <div id="auth-error" style="display:none;color:var(--danger);background:rgba(197,48,48,0.1);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:4px"></div>
       <button class="auth-btn" id="auth-submit">Log In</button>
       <div class="auth-switch">
         <span id="auth-toggle">Need an account? Sign up</span>
@@ -513,7 +514,7 @@
       <div class="onboard-title">Let's personalize your training.</div>
       <div class="onboard-sub">A few quick details so your AI Coach can calibrate your plan, weights, and recommendations.</div>
       <div class="onboard-grid">
-        <div class="form-q"><label>Full Name</label><input id="ob-name" placeholder="Tommy Vulpescu" /></div>
+        <div class="form-q"><label>Full Name</label><input id="ob-name" placeholder="Your full name" /></div>
         <div class="form-q"><label>Age</label><input id="ob-age" type="number" placeholder="22" /></div>
         <div class="form-q"><label>Height</label><input id="ob-height" placeholder='5&apos;10"' /></div>
         <div class="form-q"><label>Bodyweight (lbs)</label><input id="ob-bw" type="number" placeholder="190" /></div>
@@ -628,6 +629,7 @@
       <div style="text-align:center;padding:16px 0 24px">
         <div style="font-size:52px;margin-bottom:16px">🎯</div>
         <div class="onboard-title" id="ob-done-title">You're all set!</div>
+
         <div class="onboard-sub" style="margin-bottom:0">Your training maxes are calibrated. Your AI Coach is ready.</div>
       </div>
       <div id="ob-tm-summary"></div>
@@ -654,8 +656,8 @@
       <button data-tab="settings">Settings</button>
     </nav>
     <div class="user-chip">
-      <div class="avatar" id="user-avatar">TV</div>
-      <span id="user-name">Tommy</span>
+      <div class="avatar" id="user-avatar">?</div>
+      <span id="user-name"></span>
       <button class="logout" id="logout-btn">Log out</button>
     </div>
   </header>
@@ -1008,6 +1010,7 @@ const authToggle = document.getElementById('auth-toggle');
 const signupFields = document.getElementById('signup-fields');
 
 authToggle.addEventListener('click', () => {
+  clearAuthError();
   STATE.authMode = STATE.authMode === 'login' ? 'signup' : 'login';
   if (STATE.authMode === 'signup') {
     signupFields.style.display = 'block';
@@ -1020,10 +1023,33 @@ authToggle.addEventListener('click', () => {
   }
 });
 
+function friendlyAuthError(msg) {
+  if (!msg) return 'Something went wrong. Please try again.';
+  const m = msg.toLowerCase();
+  if (m.includes('invalid login') || m.includes('invalid credentials') || m.includes('wrong password')) return 'Incorrect email or password. Please try again.';
+  if (m.includes('email not confirmed')) return 'Please check your email and click the confirmation link first.';
+  if (m.includes('user already registered') || m.includes('already been registered')) return 'An account with this email already exists. Try logging in instead.';
+  if (m.includes('password should be') || m.includes('password must')) return 'Password must be at least 6 characters.';
+  if (m.includes('unable to validate') || m.includes('invalid email')) return 'Please enter a valid email address.';
+  if (m.includes('rate limit') || m.includes('too many requests')) return 'Too many attempts. Please wait a moment and try again.';
+  if (m.includes('network') || m.includes('fetch')) return 'Network error. Check your connection and try again.';
+  return msg;
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearAuthError() {
+  document.getElementById('auth-error').style.display = 'none';
+}
+
 authSubmit.addEventListener('click', async () => {
+  clearAuthError();
   const email = document.getElementById('au-email').value.trim();
   const pw = document.getElementById('au-password').value;
-  if (!email || !pw) return toast('Email and password required');
+  if (!email || !pw) return showAuthError('Please enter your email and password.');
   authSubmit.textContent = 'Please wait…';
   authSubmit.disabled = true;
 
@@ -1034,7 +1060,7 @@ authSubmit.addEventListener('click', async () => {
       options: { data: { name } }
     });
     if (error) {
-      toast(error.message);
+      showAuthError(friendlyAuthError(error.message));
       authSubmit.textContent = 'Create Account';
       authSubmit.disabled = false;
     } else {
@@ -1045,7 +1071,7 @@ authSubmit.addEventListener('click', async () => {
   } else {
     const { error } = await sb.auth.signInWithPassword({ email, password: pw });
     if (error) {
-      toast(error.message);
+      showAuthError(friendlyAuthError(error.message));
       authSubmit.textContent = 'Log In';
       authSubmit.disabled = false;
     }
@@ -1054,7 +1080,17 @@ authSubmit.addEventListener('click', async () => {
 });
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
-  await sb.auth.signOut();
+  try {
+    await sb.auth.signOut();
+  } catch(e) {
+    console.warn('signOut error:', e);
+  }
+  // Force UI reset regardless — onAuthStateChange may not fire on network issues
+  STATE.user = null;
+  app.classList.remove('show');
+  authScreen.style.display = 'flex';
+  document.getElementById('auth-submit').textContent = 'Log In';
+  document.getElementById('auth-submit').disabled = false;
 });
 
 // Supabase auth state handler — single source of truth for login/logout
@@ -1076,6 +1112,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     };
     authScreen.style.display = 'none';
     app.classList.add('show');
+    updateHeader();
     await loadAllUserData();
     renderAll();
     if (!STATE.profile) {
@@ -1331,11 +1368,18 @@ async function loadAllUserData() {
   // Generate plan
   STATE.plan = generatePlan();
 
-  // Update header
-  const name = STATE.user.name;
-  document.getElementById('user-name').textContent = name.split(' ')[0];
+  // If profile has a name, use it as the canonical display name
+  if (profileRes.data?.name) STATE.user.name = profileRes.data.name;
+
+  // Update header with real user name
+  updateHeader();
+}
+
+function updateHeader() {
+  const name = STATE.user?.name || '';
+  document.getElementById('user-name').textContent = name.split(' ')[0] || 'You';
   document.getElementById('user-avatar').textContent =
-    name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+    name.split(' ').filter(Boolean).map(p=>p[0]).join('').slice(0,2).toUpperCase() || '?';
 }
 
 /* Supabase save helpers — fire-and-forget alongside local STATE updates */
@@ -2541,12 +2585,9 @@ function saveProfile() {
   STATE.user.name = document.getElementById('set-name').value || STATE.user.name;
   STATE.user.email = document.getElementById('set-email').value || STATE.user.email;
   LS.set(KEYS.AUTH, STATE.user);
-  // Merge name update into profile record
   const profileUpdate = { ...(STATE.profile || {}), name: STATE.user.name, completedAt: STATE.profile?.completedAt || TODAY_STR };
   dbSaveProfile(profileUpdate);
-  document.getElementById('user-name').textContent = STATE.user.name.split(' ')[0];
-  document.getElementById('user-avatar').textContent =
-    STATE.user.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+  updateHeader();
   toast('Profile saved');
   renderSettings();
 }
