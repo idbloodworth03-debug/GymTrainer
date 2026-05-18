@@ -218,6 +218,8 @@
   .exercise-table td{padding:14px 12px;border-bottom:1px solid var(--border);vertical-align:top}
   .exercise-table tr:last-child td{border:none}
   .ex-name{font-weight:600;margin-bottom:4px}
+  .ex-link{cursor:pointer;color:var(--text)}
+  .ex-link:hover{color:var(--accent2);text-decoration:underline}
   .ex-note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
   .ex-row.completed{opacity:.55}
   .ex-row.completed .ex-name{text-decoration:line-through}
@@ -1682,7 +1684,7 @@ function renderMyPlan() {
             return `
               <tr class="ex-row ${exDone?'completed':''}">
                 <td>
-                  <div class="ex-name">${ex.name}</div>
+                  <div class="ex-name ex-link" onclick="openExerciseModal('${day.date}',${i})">${ex.name}</div>
                   ${ex.note?`<div class="ex-note">${ex.note}</div>`:''}
                 </td>
                 <td>${(ex.techniques||[]).map(t=>`<span class="technique ${t}">${t.replace('_',' ')}</span>`).join('')||'<span style="color:var(--muted)">—</span>'}</td>
@@ -2621,6 +2623,95 @@ function savePrFromCalc(name, w, r, e1rm, tm) {
 function formatDate(ds) {
   const d = new Date(ds + 'T00:00:00');
   return d.toLocaleDateString('en', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function openExerciseModal(date, idx) {
+  const ex = STATE.plan[date]?.exercises[idx];
+  if (!ex) return;
+
+  // Try to find matching library entry by name overlap
+  const lib = EXERCISE_LIBRARY.find(l =>
+    l.name.toLowerCase().split(/\W+/).some(w => w.length > 3 && ex.name.toLowerCase().includes(w)) ||
+    ex.name.toLowerCase().split(/\W+/).some(w => w.length > 3 && l.name.toLowerCase().includes(w))
+  );
+
+  const techniques = (ex.techniques || []);
+  const techBadges = techniques.map(t =>
+    `<span class="technique ${t}" style="margin-right:6px">${t.replace('_',' ')}</span>`
+  ).join('');
+
+  const cues = lib?.cues || [];
+  const cueHtml = cues.length
+    ? `<div class="modal-section">
+        <h5>Form Cues</h5>
+        <ol style="padding-left:18px;margin:0">
+          ${cues.map(c => `<li style="margin-bottom:6px">${c}</li>`).join('')}
+        </ol>
+      </div>`
+    : '';
+
+  const altHtml = lib?.alternatives?.length
+    ? `<div class="modal-section">
+        <h5>Alternatives</h5>
+        <div style="color:var(--muted)">${lib.alternatives.join(' · ')}</div>
+      </div>`
+    : '';
+
+  const techniqueGuide = techniques.map(t => {
+    const guides = {
+      SUPERSET: 'Move directly to the paired exercise with no rest between them. Rest only after both are done.',
+      DROP_SET: 'After your last working set, immediately reduce weight by ~35–40% and do as many reps as possible.',
+      BURNOUT: 'Final set taken to failure — push every last rep with good form.',
+      ISO_HOLD: 'Hold the muscle at peak contraction or full stretch for the prescribed time.',
+      AMRAP: 'As Many Reps As Possible — push until form breaks, then stop.',
+    };
+    return guides[t] ? `<li style="margin-bottom:6px"><strong>${t.replace('_',' ')}:</strong> ${guides[t]}</li>` : '';
+  }).filter(Boolean).join('');
+
+  const techniqueHtml = techniqueGuide
+    ? `<div class="modal-section">
+        <h5>Technique Notes</h5>
+        <ul style="padding-left:18px;margin:0">${techniqueGuide}</ul>
+      </div>`
+    : '';
+
+  openModal(`
+    <div class="modal-close" onclick="closeModal()">×</div>
+    <h3>${ex.name}</h3>
+    <div class="modal-meta">${lib ? `${lib.muscle} · ${lib.equipment} · ${lib.difficulty}` : 'Exercise Guide'}</div>
+
+    ${techBadges ? `<div style="margin-bottom:16px">${techBadges}</div>` : ''}
+
+    <div class="modal-section">
+      <h5>Today's Prescription</h5>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Sets</div>
+          <div style="font-size:20px;font-weight:700;color:var(--accent2)">${ex.sets}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Reps</div>
+          <div style="font-size:16px;font-weight:700;color:var(--accent2)">${ex.reps}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Rest</div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent2)">${ex.rest}</div>
+        </div>
+      </div>
+      ${ex.weight && ex.weight !== 'progressive' ? `<div style="margin-top:10px;color:var(--muted);font-size:13px">Weight: <strong style="color:var(--text)">${ex.weight}</strong></div>` : ''}
+    </div>
+
+    ${ex.note ? `<div class="modal-section"><h5>Coach Note</h5><div style="color:var(--text);line-height:1.6">${ex.note}</div></div>` : ''}
+
+    ${cueHtml}
+    ${techniqueHtml}
+
+    ${lib?.notes ? `<div class="modal-section"><h5>About This Exercise</h5><div style="color:var(--muted);line-height:1.6">${lib.notes}</div></div>` : ''}
+
+    ${lib?.tempo ? `<div class="modal-section"><h5>Tempo</h5><div style="color:var(--muted)">Count: <strong style="color:var(--text)">${lib.tempo}</strong> (eccentric–pause–concentric)</div></div>` : ''}
+
+    ${altHtml}
+  `);
 }
 
 function openModal(html) {
