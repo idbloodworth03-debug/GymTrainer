@@ -1912,47 +1912,157 @@ function processMessage(msg) {
   const m = msg.toLowerCase();
   const latest = [...STATE.checkins].sort((a,b)=>b.date.localeCompare(a.date))[0];
   const score = recoveryScore(latest);
+  const todayPlan = STATE.plan[TODAY_STR];
 
+  // --- WORKOUT MODIFICATION INTENT ---
+  const modKeywords = ['adjust','modify','change','swap','substitute','skip','remove','avoid','drop','replace'];
+  const painKeywords = ['hurt','hurts','hurting','pain','sore','soreness','ache','aching','injury','injured','discomfort','tight','strain','strained'];
+  const difficultyKeywords = ["don't want","dont want","can't do","cant do","too heavy","too hard","too much","easier","lighter","reduce","less intense"];
+
+  const hasMod = modKeywords.some(k => m.includes(k));
+  const hasPain = painKeywords.some(k => m.includes(k));
+  const hasDifficulty = difficultyKeywords.some(k => m.includes(k));
+
+  if (hasMod || hasPain || hasDifficulty) {
+    return applyWorkoutMod(m, msg);
+  }
+
+  // --- CHECK-IN ANALYSIS ---
   if (m.includes('check-in') || m.includes('checkin') || m.includes('analyze')) {
-    return `Here's your latest check-in summary (${formatDate(latest.date)}):<br>
-    • Weight: ${latest.weight} lbs<br>
-    • Sleep: ${latest.sleep} (${latest.sleepHours}h) — sleep is your biggest lever right now<br>
-    • Energy: ${latest.energy}, Stress: ${latest.stress}<br>
-    • Meal plan: ${latest.meal}, Water: ${latest.water}<br>
-    • Training: ${latest.training}<br><br>
-    Recovery score: <strong>${score} (${scoreLabel(score)})</strong>.<br><br>
-    Top focus: your sleep is at ${latest.sleepHours}h on bad nights — that's the gap. Tighten phone curfew by 10:30pm and you'll likely move from Maintaining to Improving on training.`;
+    if (!latest) return "No check-ins yet — complete your first one in the Check-In tab and I'll give you a full breakdown.";
+    return `Here's your latest check-in (${formatDate(latest.date)}):<br><br>
+• Weight: <strong>${latest.weight} lbs</strong><br>
+• Sleep: ${latest.sleep} (${latest.sleepHours}h)<br>
+• Energy: ${latest.energy} &nbsp;|&nbsp; Stress: ${latest.stress}<br>
+• Meal adherence: ${latest.meal} &nbsp;|&nbsp; Water: ${latest.water}<br>
+• Training: ${latest.training}<br><br>
+Recovery score: <strong>${score} — ${scoreLabel(score)}</strong><br><br>
+${score < 50 ? '⚠️ Low recovery — keep intensity moderate today and prioritize sleep tonight.' : score < 70 ? '✅ Decent recovery — train hard but listen to your body.' : '🔥 High recovery — push it today, you\'re primed to perform.'}`;
   }
 
-  if (m.includes('wednesday') || m.includes('missed')) {
-    return `I can see you missed your Hamstrings & Back session last Wednesday. Looking at your check-in, energy was Moderate and you mentioned feeling run down. That's a legit call — pushing through depleted on Rack Pulls is a fast track to injury. Two takeaways: (1) you can shift that workout to Saturday next time instead of skipping, and (2) your sleep the night before was the trigger. Let's protect the night before posterior chain days.`;
+  // --- FORM QUESTIONS ---
+  if (m.includes('how') && (m.includes('do') || m.includes('perform') || m.includes('form'))) {
+    const exMatch = EXERCISE_LIBRARY.find(l =>
+      l.name.toLowerCase().split(/\W+/).some(w => w.length > 3 && m.includes(w))
+    );
+    if (exMatch) {
+      return `<strong>${exMatch.name}</strong> — ${exMatch.muscle} / ${exMatch.equipment}<br><br>
+<strong>Form cues:</strong><br>${exMatch.cues.map(c => `• ${c}`).join('<br>')}<br><br>
+${exMatch.notes}<br><br>
+<em>Tempo: ${exMatch.tempo} &nbsp;|&nbsp; Rest: ${exMatch.rest}</em>`;
+    }
   }
 
-  if (m.includes('lateral') || m.includes('form')) {
-    return `For lateral raises in your Mon/Thu plan: lead with your elbows (not hands), keep a slight forward lean, and bring the DBs up to ear-level only. Your final 3 sets are AMRAP + drop — go to true failure, then drop ~40% and squeeze another 6-10 partial reps. Tempo: 2 up, 1 hold, 2 down.`;
+  // --- SPECIFIC TOPICS ---
+  if (m.includes('nutrition') || m.includes('post-workout') || m.includes('eat') || m.includes('protein') || m.includes('macro')) {
+    const s = STATE.settings;
+    return `Post-workout: 40–50g protein + 60–80g fast carbs within 90 minutes.<br><br>Your daily targets: <strong>${s.protein}g protein / ${s.carbs}g carbs / ${s.fat}g fat = ${s.calories} kcal</strong><br><br>Pre-plan meals on Friday to stay consistent on weekends — that's usually where adherence slips.`;
   }
 
-  if (m.includes('quad') || m.includes('sunday')) {
-    return `Sunday Quad Day is your hardest session of the week. Order: Hip Abductor + Walking Lunges superset → Leg Press (drop set on last) → Pendulum Squat → Leg Extensions burnout finisher. The Pendulum close-stance final set is non-negotiable for that quad sweep.`;
+  if (m.includes('deload')) {
+    return `Recovery score is ${score}. ${score < 55 ? 'A deload is warranted — cap all sets at RPE 7, drop volume by 40%, and skip all finishers this week.' : 'You\'re not quite at deload territory yet. Try one lighter session (RPE 7 cap) and see how you feel at your next check-in.'}`;
   }
 
-  if (m.includes('arms') || m.includes('bicep') || m.includes('tricep')) {
-    return `Your Tue/Fri arm days hit every tricep head and bicep angle. Key cue: on Single-Arm Pushdowns, pronated grip = lateral head, supinated = medial head. Superset both grips. On Hammer Curls last set, descend the rack from 30s to 15s — that's the salt-over-shoulder finisher.`;
+  if (m.includes('today') || m.includes('what') && m.includes('workout')) {
+    if (!todayPlan || todayPlan.exercises.length === 0) return "Today is a rest day. Focus on recovery — sleep, hydration, and a walk if you want to move.";
+    const exList = todayPlan.exercises.map(e => `• ${e.name} — ${e.sets}×${e.reps}`).join('<br>');
+    return `Today is <strong>${todayPlan.title}</strong> (${todayPlan.type}).<br><br>${exList}<br><br>Goal: ${todayPlan.goal}`;
   }
 
-  if (m.includes('nutrition') || m.includes('post-workout') || m.includes('eat')) {
-    return `Post-workout: 40-50g protein + 60-80g fast carbs within 90 minutes. Your daily target is ${STATE.settings.protein}P / ${STATE.settings.carbs}C / ${STATE.settings.fat}F = ${STATE.settings.calories} kcal. You're at 90% adherence — solid. The 10% slip seems to be weekends; pre-plan meals on Friday and you'll close the gap.`;
+  // --- FALLBACK ---
+  return `Heard you — ask me to adjust any exercise, explain form, or analyze your recovery and I'll take action. For example: "skip the heavy press today" or "how do I do rack pulls?"`;
+}
+
+function applyWorkoutMod(m, originalMsg) {
+  const todayPlan = STATE.plan[TODAY_STR];
+
+  if (!todayPlan || todayPlan.exercises.length === 0) {
+    return "Today is a rest day — nothing to adjust. See you tomorrow!";
   }
 
-  if (m.includes('deload') || m.includes('rest')) {
-    return `Given a recovery score of ${score} and "Maintaining" training trend, you're not ready for a full deload yet — that triggers at 3+ weeks of Decreasing. But a smart move: this week, cap top sets at RPE 8 (leave 2 in the tank) and skip the burnout finishers on Mon/Thu. Reassess at next check-in.`;
+  // --- Detect body part ---
+  const areaMap = {
+    chest:    ['chest','pec','sternum','push','press'],
+    shoulder: ['shoulder','delt','rotator cuff','overhead'],
+    back:     ['back','lat','spine','lower back','trap'],
+    legs:     ['leg','knee','quad','hamstring','glute','hip','squat','lunge'],
+    arms:     ['arm','bicep','tricep','elbow','wrist','curl','pushdown'],
+  };
+  let area = null;
+  for (const [a, kws] of Object.entries(areaMap)) {
+    if (kws.some(k => m.includes(k))) { area = a; break; }
   }
 
-  if (m.includes('cravings') || m.includes('struggle') || m.includes('smoking') || m.includes('social') || m.includes('girl')) {
-    return `You flagged cravings, social media, and smoking as struggles — that's honest and important. Cravings hit hardest in low-recovery states, and your score (${score}) tracks with that. Three things that move the needle: (1) phone out of bedroom, (2) high-protein breakfast within 30 min of waking blunts cravings, (3) a 10-min walk when an urge hits. Small lever, big payoff.`;
+  // --- Detect severity ---
+  const isSevere = ['really bad','sharp pain','severe','can\'t','cannot','no way'].some(k => m.includes(k));
+  const isMild   = ['a little','slight','bit','mild','sore','tight','ache','discomfort'].some(k => m.includes(k));
+
+  // --- Detect specific exercise by name ---
+  let targetEx = null;
+  for (const ex of todayPlan.exercises) {
+    const words = ex.name.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+    if (words.some(w => m.includes(w))) { targetEx = ex.name; break; }
   }
 
-  return `Got it — "${msg}". Based on your current plan (${STATE.plan[TODAY_STR]?.title || 'Rest Day'}) and recovery score of ${score}, I'd say focus on consistency this week. Want me to dig into a specific exercise, your check-in, or nutrition?`;
+  // --- Exercise relevance by area ---
+  function matchesArea(ex) {
+    if (targetEx) return ex.name === targetEx;
+    if (!area) return isHeavyEx(ex);
+    const n = ex.name.toLowerCase();
+    return areaMap[area].some(k => n.includes(k)) || isHeavyEx(ex) && area === 'chest' && (n.includes('press') || n.includes('fly') || n.includes('pec'));
+  }
+  function isHeavyEx(ex) {
+    const w = (ex.weight||'').toLowerCase();
+    return w.includes('heavy') || w.includes('progressive') || (ex.techniques||[]).includes('DROP_SET');
+  }
+
+  const changed = [];
+  const removed = [];
+
+  todayPlan.exercises = todayPlan.exercises.map(ex => {
+    if (!matchesArea(ex)) return ex;
+
+    if (isSevere) {
+      removed.push(ex.name);
+      return null;
+    }
+
+    // Lighter version
+    const orig = `${ex.sets}×${ex.reps} @ ${ex.weight}`;
+    const mod = {
+      ...ex,
+      sets: Math.max(2, typeof ex.sets === 'number' ? ex.sets - 1 : parseInt(ex.sets) - 1 || 3),
+      reps: '12-15',
+      weight: 'light — coach adjusted',
+      techniques: (ex.techniques||[]).filter(t => t !== 'DROP_SET' && t !== 'BURNOUT' && t !== 'AMRAP'),
+      note: `⚠️ Coach-adjusted: reduced load${area ? ` (${area} discomfort)` : ''}. Original: ${orig}. Stop if discomfort increases.`,
+    };
+    changed.push(`<strong>${ex.name}</strong>: lightened to ${mod.sets}×${mod.reps} at easy weight`);
+    return mod;
+  }).filter(Boolean);
+
+  if (changed.length === 0 && removed.length === 0) {
+    return `I looked at today's ${todayPlan.title} session but couldn't find exercises that clearly match what you described. Try naming the specific exercise — e.g. "skip the Incline Press" or "lighten the Pec Dec".`;
+  }
+
+  // Persist mod flag and re-render plan
+  STATE.mods[TODAY_STR] = STATE.mods[TODAY_STR] || {};
+  STATE.mods[TODAY_STR]._coachEdited = true;
+  LS.set(KEYS.MODS, STATE.mods);
+  dbSaveMod(TODAY_STR, STATE.mods[TODAY_STR]);
+  renderMyPlan();
+
+  const areaLabel = area ? `(${area} discomfort)` : '';
+  const lines = [
+    ...changed,
+    ...removed.map(n => `<strong>${n}</strong>: removed for today`),
+  ].join('<br>• ');
+
+  const safetyNote = area === 'chest'
+    ? '<br><br>⚠️ If you feel sharp chest pain or it spreads to your arm or jaw, stop training immediately and seek medical attention.'
+    : area ? `<br><br>If ${area} pain increases during the session, stop and rest — don't push through sharp pain.` : '';
+
+  return `Done. I've updated today's <strong>${todayPlan.title}</strong> ${areaLabel}:<br><br>• ${lines}<br><br>The rest of your session stays the same. Open <strong>My Plan</strong> to see the changes.${safetyNote}`;
 }
 
 /* ==========================================================
