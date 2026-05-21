@@ -1,1 +1,1330 @@
-see branch
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vanta</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#07090f;--surface:#0d1018;--card:#131720;--card2:#181d2b;
+  --accent:#7c3aed;--accent-light:#a78bfa;--teal:#14b8a6;
+  --success:#10b981;--warning:#f59e0b;--danger:#ef4444;--info:#38bdf8;
+  --text:#e8eaf0;--muted:#64748b;--border:#1f2538;
+  --radius:12px;--radius-sm:8px;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);}
+
+/* ── Auth ── */
+#authScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 55% 25%,#1a0d3a 0%,var(--bg) 65%);}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:44px 40px;width:380px;}
+.auth-logo{font-size:2.2rem;font-weight:900;letter-spacing:-1.5px;color:#fff;margin-bottom:6px;}
+.auth-logo span{color:var(--accent-light);}
+.auth-promise{font-size:0.88rem;color:var(--muted);margin-bottom:32px;line-height:1.5;}
+.auth-tabs{display:flex;background:var(--card);border-radius:10px;padding:4px;gap:4px;margin-bottom:22px;}
+.auth-tab{flex:1;padding:8px;border-radius:7px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.88rem;transition:.2s;}
+.auth-tab.active{background:var(--accent);color:#fff;font-weight:600;}
+.auth-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-size:0.9rem;margin-bottom:10px;outline:none;font-family:inherit;transition:.2s;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:4px;transition:.2s;}
+.auth-btn:hover{background:var(--accent-light);}
+
+/* ── Shell ── */
+#appShell{display:none;flex-direction:column;height:100vh;}
+.topbar{height:54px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;}
+.vanta-logo{font-size:1.15rem;font-weight:900;letter-spacing:-0.5px;color:#fff;white-space:nowrap;}
+.vanta-logo span{color:var(--accent-light);}
+.topbar-tabs{display:flex;gap:2px;}
+.ttab{padding:6px 16px;border-radius:8px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.85rem;font-weight:500;transition:.2s;white-space:nowrap;}
+.ttab:hover{color:var(--text);background:var(--card);}
+.ttab.active{background:var(--accent);color:#fff;font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.streak-badge{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.82rem;font-weight:700;}
+.streak-badge .fire{font-size:1rem;}
+.user-pill{font-size:0.8rem;color:var(--muted);padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:20px;}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:0.78rem;transition:.2s;}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ── Tab Panels ── */
+.tab-panel{flex:1;overflow:hidden;display:none;}
+.tab-panel.active{display:flex;}
+
+/* ═══ MY PLAN ═══ */
+#tab-plan{flex-direction:row;}
+.plan-sidebar{width:240px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:6px;}
+.week-dots{display:flex;gap:5px;margin-bottom:10px;padding:10px 12px;background:var(--card);border-radius:10px;}
+.wd{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;}
+.wd-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;font-weight:600;}
+.wd-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;}
+.dot-done{background:var(--success);color:#fff;}
+.dot-today{background:var(--accent);color:#fff;box-shadow:0 0 8px var(--accent)88;}
+.dot-rest{background:var(--border);}
+.dot-missed{background:var(--danger)44;border:1.5px solid var(--danger);}
+.dot-upcoming{background:var(--border);}
+
+.plan-day-btn{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:.2s;text-align:left;}
+.plan-day-btn:hover{border-color:var(--accent);}
+.plan-day-btn.active{border-color:var(--accent);background:var(--card2);}
+.plan-day-btn.is-today{border-color:var(--accent-light);}
+.pdb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.pdb-date{font-size:0.7rem;color:var(--muted);}
+.pdb-title{font-size:0.82rem;font-weight:600;}
+.pdb-type{font-size:0.68rem;margin-top:2px;}
+
+.plan-main{flex:1;overflow-y:auto;padding:20px;}
+
+/* Stats strip */
+.stats-strip{display:flex;gap:10px;margin-bottom:20px;max-width:860px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;}
+.stat-card .sv{font-size:1.4rem;font-weight:800;}
+.stat-card .sl{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.consistency-bar{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden;}
+.consistency-fill{height:100%;background:var(--accent);border-radius:2px;transition:.6s;}
+
+/* Day card */
+.day-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;max-width:860px;margin-bottom:12px;}
+.day-card.is-today{border-color:var(--accent)44;box-shadow:0 0 24px var(--accent)11;}
+.day-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.day-card-meta .dc-date{font-size:0.78rem;color:var(--muted);margin-bottom:3px;}
+.day-card-meta .dc-title{font-size:1.3rem;font-weight:800;}
+.day-card-meta .dc-goal{font-size:0.85rem;color:var(--muted);margin-top:4px;}
+.status-chip{font-size:0.72rem;padding:4px 11px;border-radius:20px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.type-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.type-pill{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:0.75rem;font-weight:600;}
+.type-dot{width:7px;height:7px;border-radius:50%;}
+.coach-note{background:var(--card2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:16px;font-size:0.85rem;line-height:1.5;}
+.coach-note-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-light);font-weight:700;margin-bottom:3px;}
+.modified-bar{background:var(--warning)11;border:1px solid var(--warning)33;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:0.8rem;display:flex;align-items:center;gap:8px;color:var(--warning);}
+
+/* Exercise logging */
+.exercise-block{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:.3s;}
+.exercise-block.all-done{border-color:var(--success)55;box-shadow:0 0 12px var(--success)11;}
+.ex-header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;}
+.ex-header-left .ex-name{font-weight:700;font-size:0.95rem;}
+.ex-header-left .ex-muscles{font-size:0.72rem;color:var(--muted);margin-top:2px;}
+.ex-header-right{display:flex;align-items:center;gap:8px;}
+.ex-badge{font-size:0.68rem;padding:2px 8px;border-radius:20px;font-weight:700;}
+.ex-progress{font-size:0.75rem;color:var(--muted);}
+.log-table-wrap{padding:0 14px 14px;}
+.log-table{width:100%;border-collapse:collapse;}
+.log-table th{font-size:0.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:4px 6px;text-align:left;}
+.log-table td{padding:5px 6px;vertical-align:middle;}
+.log-input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem;padding:4px 8px;width:72px;text-align:center;outline:none;transition:.2s;}
+.log-input:focus{border-color:var(--accent);}
+.rpe-input{width:48px;}
+.set-num{font-size:0.78rem;color:var(--muted);font-weight:600;padding:0 4px;}
+.target-cell{font-size:0.75rem;color:var(--muted);}
+.check-btn{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;transition:.2s;color:transparent;}
+.check-btn:hover{border-color:var(--success);}
+.check-btn.done{background:var(--success);border-color:var(--success);color:#fff;}
+.log-row.done td{opacity:.65;}
+.add-set-btn{background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:5px 12px;cursor:pointer;font-size:0.75rem;margin-top:6px;transition:.2s;font-family:inherit;}
+.add-set-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.day-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.rest-card{text-align:center;padding:40px;color:var(--muted);}
+.rest-card .rest-icon{font-size:2.5rem;margin-bottom:10px;}
+.rest-card .rest-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:6px;}
+
+/* ═══ CALENDAR ═══ */
+#tab-calendar{flex-direction:row;}
+.cal-main{flex:1;overflow-y:auto;padding:22px;}
+.cal-detail-panel{width:280px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);padding:18px;overflow-y:auto;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.cal-nav{display:flex;align-items:center;gap:10px;}
+.cal-nav-btn{background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 11px;cursor:pointer;font-size:0.9rem;transition:.2s;}
+.cal-nav-btn:hover{border-color:var(--accent);}
+.cal-month-lbl{font-size:1rem;font-weight:700;min-width:150px;text-align:center;}
+.cal-view-toggle{display:flex;gap:3px;background:var(--card);border-radius:8px;padding:3px;}
+.cvbtn{padding:4px 12px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.8rem;transition:.2s;}
+.cvbtn.active{background:var(--accent);color:#fff;font-weight:600;}
+.cal-legend{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:0.75rem;color:var(--muted);}
+.legend-dot{width:9px;height:9px;border-radius:3px;}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-weekday{font-size:0.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center;padding:6px 0;}
+.cal-cell{aspect-ratio:1;background:var(--card);border:1.5px solid var(--border);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.2s;padding:3px;}
+.cal-cell:hover{border-color:var(--accent);transform:scale(1.04);}
+.cal-cell.other-month{opacity:.3;}
+.cal-cell.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)44;}
+.cal-cell.is-today{border-color:var(--accent-light);}
+.cal-date-n{font-size:0.8rem;font-weight:600;}
+.cal-dot{width:6px;height:6px;border-radius:50%;margin-top:3px;}
+.cal-lbl{font-size:0.55rem;text-align:center;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;}
+.s-complete .cal-date-n{color:var(--success);}
+.s-complete{background:var(--success)11;border-color:var(--success)44;}
+.s-complete .cal-dot{background:var(--success);}
+.s-missed{background:var(--danger)11;border-color:var(--danger)33;}
+.s-missed .cal-date-n{color:var(--danger);}
+.s-missed .cal-dot{background:var(--danger);}
+.s-modified{background:var(--warning)11;border-color:var(--warning)33;}
+.s-modified .cal-dot{background:var(--warning);}
+.s-upcoming .cal-dot{background:var(--accent);}
+.s-rest .cal-dot{background:var(--muted);}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+.week-cell{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 8px;cursor:pointer;transition:.2s;min-height:130px;}
+.week-cell:hover{border-color:var(--accent);}
+.week-day-n{font-size:0.68rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px;}
+.week-date-n{font-size:1rem;font-weight:800;margin-bottom:8px;}
+.week-title{font-size:0.75rem;font-weight:600;line-height:1.3;margin-bottom:5px;}
+.week-chip{font-size:0.62rem;padding:2px 7px;border-radius:20px;font-weight:700;display:inline-block;}
+.cal-detail-title{font-size:1rem;font-weight:700;margin-bottom:4px;}
+.cal-detail-date{font-size:0.78rem;color:var(--muted);margin-bottom:12px;}
+.cal-detail-ex{background:var(--card);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:0.8rem;}
+.cal-detail-ex strong{display:block;margin-bottom:2px;}
+.cal-detail-ex span{color:var(--muted);}
+.no-sel{color:var(--muted);font-size:0.85rem;text-align:center;padding:40px 10px;}
+
+/* ═══ COACH ═══ */
+#tab-chat{flex-direction:column;}
+.chat-wrap{display:flex;flex:1;overflow:hidden;}
+.chat-log-panel{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.chat-log-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px;}
+.log-entry{background:var(--card);border:1px solid var(--warning)33;border-radius:8px;padding:8px 10px;}
+.log-entry .le-date{font-size:0.67rem;color:var(--warning);}
+.log-entry .le-text{font-size:0.75rem;color:var(--muted);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chat-top-bar{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.coach-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.coach-name{font-weight:700;font-size:0.9rem;}
+.coach-online{font-size:0.72rem;color:var(--success);}
+.coach-desc{font-size:0.75rem;color:var(--muted);margin-left:auto;max-width:300px;text-align:right;line-height:1.4;}
+
+/* Quick actions grid */
+.quick-actions{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.qa-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;}
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.qa-btn{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:8px 6px;cursor:pointer;text-align:center;transition:.2s;font-family:inherit;}
+.qa-btn:hover{border-color:var(--accent);background:var(--card2);}
+.qa-btn .qa-icon{font-size:1.2rem;display:block;margin-bottom:3px;}
+.qa-btn .qa-label{font-size:0.7rem;color:var(--muted);line-height:1.3;}
+.qa-btn:hover .qa-label{color:var(--accent-light);}
+
+.chat-msgs{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px;}
+.msg{display:flex;gap:8px;max-width:80%;}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.msg-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;margin-top:2px;}
+.msg-av.ai-av{background:linear-gradient(135deg,var(--accent),var(--teal));}
+.msg-av.user-av{background:var(--card2);border:1px solid var(--border);}
+.msg-bubble{background:var(--card);border:1px solid var(--border);border-radius:4px 12px 12px 12px;padding:9px 13px;font-size:0.85rem;line-height:1.55;}
+.msg.user .msg-bubble{background:var(--accent);border-color:var(--accent);color:#fff;border-radius:12px 4px 12px 12px;}
+.msg-time{font-size:0.65rem;color:var(--muted);margin-top:3px;}
+.msg.user .msg-time{text-align:left;}
+.confirm-card{background:var(--card2);border:1px solid var(--warning)44;border-radius:10px;padding:12px;margin-top:8px;}
+.confirm-title{font-size:0.72rem;color:var(--warning);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+.confirm-diff{background:var(--surface);border-radius:7px;padding:10px;margin-bottom:10px;font-size:0.8rem;line-height:1.7;}
+.diff-remove{color:var(--danger);}
+.diff-add{color:var(--success);}
+.confirm-btns{display:flex;gap:7px;}
+.chat-input-row{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.chat-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:0.85rem;resize:none;outline:none;font-family:inherit;}
+.chat-input:focus{border-color:var(--accent);}
+.send-btn{background:var(--accent);border:none;border-radius:10px;width:40px;color:#fff;cursor:pointer;font-size:1rem;transition:.2s;flex-shrink:0;}
+.send-btn:hover{background:var(--accent-light);}
+
+/* ═══ LIBRARY ═══ */
+#tab-library{flex-direction:row;}
+.lib-main{flex:1;overflow-y:auto;padding:22px;}
+.lib-detail{width:300px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);padding:20px;overflow-y:auto;}
+.lib-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.lib-filter-btn{background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--muted);padding:5px 14px;cursor:pointer;font-size:0.8rem;transition:.2s;font-family:inherit;}
+.lib-filter-btn:hover{border-color:var(--accent);}
+.lib-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.lib-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:.2s;}
+.lib-card:hover{border-color:var(--accent);}
+.lib-card.selected{border-color:var(--accent);background:var(--card2);}
+.lib-card-name{font-weight:700;font-size:0.9rem;margin-bottom:4px;}
+.lib-card-muscles{font-size:0.72rem;color:var(--muted);margin-bottom:8px;}
+.lib-card-bottom{display:flex;justify-content:space-between;align-items:center;}
+.diff-badge{font-size:0.65rem;padding:2px 8px;border-radius:20px;font-weight:700;}
+.diff-beginner{background:#10b98122;color:var(--success);}
+.diff-intermediate{background:#f59e0b22;color:var(--warning);}
+.diff-advanced{background:#ef444422;color:var(--danger);}
+.cat-badge{font-size:0.65rem;color:var(--muted);}
+.lib-detail-name{font-size:1.1rem;font-weight:800;margin-bottom:4px;}
+.lib-detail-muscles{font-size:0.8rem;color:var(--muted);margin-bottom:14px;}
+.lib-section-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:.6px;color:var(--accent-light);font-weight:700;margin-bottom:7px;margin-top:14px;}
+.cue-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;font-size:0.82rem;line-height:1.4;}
+.cue-num{width:18px;height:18px;border-radius:50%;background:var(--accent)22;color:var(--accent-light);font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.mistake-box{background:var(--danger)0d;border:1px solid var(--danger)22;border-radius:8px;padding:10px 12px;font-size:0.82rem;line-height:1.4;color:var(--text);}
+.alt-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.alt-chip{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:0.75rem;}
+.no-lib-sel{color:var(--muted);font-size:0.85rem;text-align:center;padding:60px 20px;}
+
+/* ── Shared Buttons ── */
+.btn{padding:7px 15px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:0.8rem;font-weight:600;transition:.2s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-light);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{opacity:.88;}
+.btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);}
+.btn-warning{background:var(--warning)22;color:var(--warning);border:1px solid var(--warning)44;}
+.btn-danger{background:var(--danger)22;color:var(--danger);border:1px solid var(--danger)44;}
+.btn-sm{padding:5px 11px;font-size:0.75rem;}
+.btn-complete{background:var(--success);color:#fff;font-size:0.88rem;padding:10px 20px;}
+.btn-complete:hover{opacity:.88;}
+
+/* type colors */
+.type-strength{color:#818cf8;}.dot-strength{background:#818cf8;}
+.type-hypertrophy{color:#f472b6;}.dot-hypertrophy{background:#f472b6;}
+.type-conditioning{color:#fb923c;}.dot-conditioning{background:#fb923c;}
+.type-mobility{color:var(--info);}.dot-mobility{background:var(--info);}
+.type-recovery{color:var(--success);}.dot-recovery{background:var(--success);}
+.type-rest{color:var(--muted);}.dot-rest{background:var(--muted);}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">VANTA<span>.</span></div>
+    <div class="auth-promise">Stay consistent even when your week isn't perfect.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authSwitch('login',this)">Sign In</button>
+      <button class="auth-tab" onclick="authSwitch('signup',this)">Sign Up</button>
+    </div>
+    <input class="auth-input" id="authName" type="text" placeholder="Your name" style="display:none"/>
+    <input class="auth-input" id="authEmail" type="email" placeholder="Email address" value="thomas@gym.com"/>
+    <input class="auth-input" id="authPass" type="password" placeholder="Password" value="••••••••"/>
+    <button class="auth-btn" id="authBtn" onclick="handleAuth()">Sign In</button>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell">
+  <div class="topbar">
+    <div class="vanta-logo">VANTA<span>.</span></div>
+    <div class="topbar-tabs">
+      <button class="ttab active" onclick="switchTab('plan',this)">My Plan</button>
+      <button class="ttab" onclick="switchTab('calendar',this)">Calendar</button>
+      <button class="ttab" onclick="switchTab('chat',this)">Coach</button>
+      <button class="ttab" onclick="switchTab('library',this)">Library</button>
+    </div>
+    <div class="topbar-right">
+      <div class="streak-badge"><span class="fire">🔥</span><span id="streakNum">0</span></div>
+      <div class="user-pill" id="userPill">Thomas</div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- MY PLAN -->
+  <div id="tab-plan" class="tab-panel active">
+    <div class="plan-sidebar">
+      <div class="week-dots" id="weekDots"></div>
+      <div id="planDayList"></div>
+    </div>
+    <div class="plan-main" id="planMain"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="tab-calendar" class="tab-panel">
+    <div class="cal-main">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calNav(-1)">&#8592;</button>
+          <div class="cal-month-lbl" id="calLbl"></div>
+          <button class="cal-nav-btn" onclick="calNav(1)">&#8594;</button>
+        </div>
+        <div class="cal-view-toggle">
+          <button class="cvbtn active" onclick="setCalView('month',this)">Month</button>
+          <button class="cvbtn" onclick="setCalView('week',this)">Week</button>
+        </div>
+      </div>
+      <div class="cal-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Completed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Upcoming</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div>Rest</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Missed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>Modified</div>
+      </div>
+      <div id="calGrid"></div>
+    </div>
+    <div class="cal-detail-panel" id="calDetailPanel">
+      <div class="no-sel">Click a day to see details.</div>
+    </div>
+  </div>
+
+  <!-- COACH CHAT -->
+  <div id="tab-chat" class="tab-panel">
+    <div class="chat-wrap">
+      <div class="chat-log-panel">
+        <div class="chat-log-title">Change Log</div>
+        <div id="changeLogList"><div style="font-size:0.75rem;color:var(--muted)">No changes yet.</div></div>
+      </div>
+      <div class="chat-main">
+        <div class="chat-top-bar">
+          <div class="coach-av">🤖</div>
+          <div><div class="coach-name">Coach</div><div class="coach-online">● Online</div></div>
+          <div class="coach-desc">I can modify your plan, swap exercises, and adjust workouts. I'll always ask before changing anything.</div>
+        </div>
+        <div class="quick-actions">
+          <div class="qa-title">Quick Actions — tap to trigger</div>
+          <div class="qa-grid">
+            <button class="qa-btn" onclick="triggerQA('tired')"><span class="qa-icon">😴</span><span class="qa-label">I'm tired today</span></button>
+            <button class="qa-btn" onclick="triggerQA('missed')"><span class="qa-icon">⏭️</span><span class="qa-label">Missed yesterday</span></button>
+            <button class="qa-btn" onclick="triggerQA('short')"><span class="qa-icon">⏱️</span><span class="qa-label">Only 35 min</span></button>
+            <button class="qa-btn" onclick="triggerQA('harder')"><span class="qa-icon">💪</span><span class="qa-label">Push me harder</span></button>
+            <button class="qa-btn" onclick="triggerQA('easier')"><span class="qa-icon">🔽</span><span class="qa-label">Make it easier</span></button>
+            <button class="qa-btn" onclick="triggerQA('swap')"><span class="qa-icon">🔄</span><span class="qa-label">Swap exercise</span></button>
+            <button class="qa-btn" onclick="triggerQA('noequip')"><span class="qa-icon">🏗️</span><span class="qa-label">No equipment</span></button>
+            <button class="qa-btn" onclick="triggerQA('already')"><span class="qa-icon">🦵</span><span class="qa-label">Already trained it</span></button>
+          </div>
+        </div>
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask about your plan..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+          <button class="send-btn" onclick="sendChat()">&#9658;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIBRARY -->
+  <div id="tab-library" class="tab-panel">
+    <div class="lib-main">
+      <div class="lib-filters" id="libFilters"></div>
+      <div class="lib-grid" id="libGrid"></div>
+    </div>
+    <div class="lib-detail" id="libDetail">
+      <div class="no-lib-sel">Select an exercise to see cues, common mistakes, and alternatives.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// EXERCISE LIBRARY DATA
+// ══════════════════════════════════════
+const EXERCISES = [
+  {name:'Bench Press',muscles:['Chest','Triceps','Front Delts'],difficulty:'intermediate',category:'Push',
+   cues:['Retract and depress shoulder blades','Bar touches mid-chest, elbows ~45° from torso','Drive feet into the floor throughout'],
+   mistake:'Flaring elbows to 90° puts the shoulder in a vulnerable position and shifts load off chest.',
+   alts:['DB Bench Press','Push-Up','Cable Fly']},
+  {name:'Back Squat',muscles:['Quads','Glutes','Hamstrings','Core'],difficulty:'intermediate',category:'Legs',
+   cues:['Big breath and brace before descending','Drive knees out in line with toes','Chest stays tall — do not fold forward'],
+   mistake:'Butt wink at the bottom — caused by limited ankle or hip mobility. Stop just above where hips tuck.',
+   alts:['Goblet Squat','Hack Squat','Leg Press']},
+  {name:'Deadlift',muscles:['Hamstrings','Glutes','Lower Back','Traps'],difficulty:'advanced',category:'Pull',
+   cues:['Bar over mid-foot before pulling','Lats tight — "protect your armpits"','Take the slack out before driving the floor away'],
+   mistake:'Jerking the bar. Build tension first, then apply force smoothly.',
+   alts:['Trap Bar Deadlift','Romanian Deadlift','Leg Curl']},
+  {name:'Pull-Up',muscles:['Lats','Biceps','Rear Delts'],difficulty:'intermediate',category:'Pull',
+   cues:['Start from a dead hang every rep','Pull elbows toward your back pockets','Control the descent for 2 seconds'],
+   mistake:'Half reps — not reaching full extension removes lat stretch and reduces growth stimulus.',
+   alts:['Lat Pulldown','Cable Row','Assisted Pull-Up']},
+  {name:'Overhead Press',muscles:['Front Delts','Triceps','Upper Chest'],difficulty:'intermediate',category:'Push',
+   cues:['Bar just below chin at start','Push head through at lockout','Squeeze glutes hard to prevent lower-back arch'],
+   mistake:'Excessive lumbar extension — brace the core and keep ribs down.',
+   alts:['DB Shoulder Press','Arnold Press','Machine Shoulder Press']},
+  {name:'Romanian Deadlift',muscles:['Hamstrings','Glutes','Lower Back'],difficulty:'intermediate',category:'Legs',
+   cues:['Hinge at the hip, not the lower back','Bar stays close to legs throughout','Stop when you feel hamstring tension — do not round'],
+   mistake:'Rounding the lower back at the bottom. Pack the spine and only go as deep as mobility allows.',
+   alts:['Leg Curl','Good Morning','Nordic Curl']},
+  {name:'Incline DB Press',muscles:['Upper Chest','Front Delts','Triceps'],difficulty:'beginner',category:'Push',
+   cues:['Use 30–45° incline — steeper becomes a shoulder press','Elbows at 45–60° from body','Lower until elbows break the plane of the bench'],
+   mistake:'Too steep an angle (70°+) removes chest and turns it into a shoulder exercise.',
+   alts:['Incline Barbell Press','High Cable Fly','Bench Press']},
+  {name:'Cable Row',muscles:['Mid-Back','Lats','Biceps'],difficulty:'beginner',category:'Pull',
+   cues:['Initiate with elbows, not hands','Squeeze shoulder blades together at end range','Slow 3-second return to full stretch'],
+   mistake:'Swinging and using momentum — slows progress and risks lower back.',
+   alts:['Dumbbell Row','Barbell Row','Machine Row']},
+  {name:'Barbell Row',muscles:['Lats','Mid-Back','Biceps','Rear Delts'],difficulty:'intermediate',category:'Pull',
+   cues:['Hinge to ~45° torso angle','Pull bar into lower chest / upper stomach','Lead with elbows, not hands'],
+   mistake:'Using excessive torso jerk to complete reps — loads lower back instead of lats.',
+   alts:['Cable Row','DB Row','T-Bar Row']},
+  {name:'Lateral Raise',muscles:['Lateral Delts'],difficulty:'beginner',category:'Push',
+   cues:['Lead with elbows, not hands or wrists','Slight forward lean helps recruit lateral delt','Stop at shoulder height, no higher'],
+   mistake:'Going too heavy — traps dominate and the lateral delt gets little stimulus.',
+   alts:['Cable Lateral Raise','Machine Lateral Raise','DB Shoulder Press']},
+  {name:'Leg Press',muscles:['Quads','Glutes','Hamstrings'],difficulty:'beginner',category:'Legs',
+   cues:['Feet shoulder-width, mid-platform','Lower until knees reach ~90° — stop before hips peel off','Do not lock knees at full extension'],
+   mistake:'Hips lifting off seat at the bottom — risks lower back injury.',
+   alts:['Back Squat','Hack Squat','Goblet Squat']},
+  {name:'Tricep Pushdown',muscles:['Triceps'],difficulty:'beginner',category:'Push',
+   cues:['Upper arms pinned to sides throughout','Full extension at bottom — squeeze','2-second controlled return'],
+   mistake:'Elbows drifting forward prevents triceps from reaching full length.',
+   alts:['Overhead Tricep Extension','Close-Grip Bench','Dip']},
+  {name:'Barbell Curl',muscles:['Biceps','Forearms'],difficulty:'beginner',category:'Pull',
+   cues:['No swinging — strict form','Full extension at the bottom every rep','Squeeze hard at the top'],
+   mistake:'Partial reps — not reaching full extension limits long head growth.',
+   alts:['DB Curl','Hammer Curl','Cable Curl']},
+  {name:'Hip Thrust',muscles:['Glutes','Hamstrings'],difficulty:'beginner',category:'Legs',
+   cues:['Shoulder blades on bench edge','Drive through heels, not toes','Pause and squeeze glutes 1 second at top'],
+   mistake:'Hyperextending the lower back at the top — posteriorly tilt the pelvis.',
+   alts:['Glute Bridge','Cable Pull-Through','Romanian Deadlift']},
+  {name:'Face Pull',muscles:['Rear Delts','Rotator Cuff','Traps'],difficulty:'beginner',category:'Pull',
+   cues:['Pull to face height','External rotate at end — hands finish above elbows','Use light weight and high reps (15–25)'],
+   mistake:'Too heavy — becomes a row and loses the rotator cuff benefit.',
+   alts:['Rear Delt Fly','Band Pull-Apart','Reverse Cable Fly']},
+  {name:'Bulgarian Split Squat',muscles:['Quads','Glutes','Hip Flexors'],difficulty:'intermediate',category:'Legs',
+   cues:['Front foot far enough forward — shin stays vertical','Lower straight down, not forward','Drive through the front heel to stand'],
+   mistake:'Rear foot too close — causes forward knee drift instead of hip hinge.',
+   alts:['Reverse Lunge','Step-Up','Leg Press']},
+  {name:'Dip',muscles:['Chest','Triceps','Front Delts'],difficulty:'intermediate',category:'Push',
+   cues:['Lean slightly forward for more chest involvement','Lower until upper arm is parallel to floor','Lock out fully at the top'],
+   mistake:'Not locking out — triceps never reach peak contraction.',
+   alts:['Bench Dip','Close-Grip Bench','Tricep Pushdown']},
+  {name:'Leg Curl',muscles:['Hamstrings'],difficulty:'beginner',category:'Legs',
+   cues:['Full extension before each rep','Curl as far as the machine allows','3-second eccentric — control the descent'],
+   mistake:'Hips lifting off the pad — reduces hamstring activation and strains the lower back.',
+   alts:['Romanian Deadlift','Nordic Curl','Glute-Ham Raise']},
+  {name:'Goblet Squat',muscles:['Quads','Glutes','Core'],difficulty:'beginner',category:'Legs',
+   cues:['Hold weight at chest height','Elbows inside knees at the bottom','Sit as deep as mobility allows'],
+   mistake:'Using it as a warm-up only — load it heavier to build real quad strength.',
+   alts:['Back Squat','Front Squat','Leg Press']},
+  {name:'Hammer Curl',muscles:['Biceps','Brachialis','Forearms'],difficulty:'beginner',category:'Pull',
+   cues:['Neutral grip (thumbs up) throughout','Upper arms stay at sides','Full extension at the bottom'],
+   mistake:'Swinging reps — strip weight to maintain strict form.',
+   alts:['DB Curl','Cable Curl','Barbell Curl']},
+  {name:'Plank',muscles:['Core','Shoulders','Glutes'],difficulty:'beginner',category:'Core',
+   cues:['Neutral spine — no sagging hips','Squeeze glutes and quads to hold position','Breathe steadily — don\'t hold your breath'],
+   mistake:'Holding breath creates false stability and limits time under tension.',
+   alts:['Ab Wheel Rollout','Dead Bug','Pallof Press']},
+  {name:'Kettlebell Swing',muscles:['Glutes','Hamstrings','Core','Shoulders'],difficulty:'intermediate',category:'Conditioning',
+   cues:['Hip hinge — not a squat','Drive hips forward explosively','Let the bell float to chest height, then hinge back'],
+   mistake:'Squatting the swing — the power comes from the hip snap, not knee bend.',
+   alts:['Romanian Deadlift','Hip Thrust','Box Jump']},
+  {name:'Box Jump',muscles:['Quads','Glutes','Calves'],difficulty:'intermediate',category:'Conditioning',
+   cues:['Land softly with knees bent','Reset fully before each jump','Step down — don\'t jump down'],
+   mistake:'Not resetting between reps — accumulated fatigue causes sloppy landings.',
+   alts:['Squat Jump','Step-Up','Broad Jump']},
+  {name:'Calf Raise',muscles:['Gastrocnemius','Soleus'],difficulty:'beginner',category:'Legs',
+   cues:['Full range — heels below platform level at bottom','Pause 1 second at peak contraction','Slow 3-second eccentric'],
+   mistake:'Bouncing through reps with partial ROM — calves are built with slow, full-range reps.',
+   alts:['Seated Calf Raise','Single-Leg Calf Raise','Leg Press Calf Raise']},
+  {name:'DB Shoulder Press',muscles:['Front Delts','Lateral Delts','Triceps'],difficulty:'beginner',category:'Push',
+   cues:['Start with DBs at ear height, elbows at 90°','Press straight up until arms fully extended','Control the descent back to start'],
+   mistake:'Pressing forward instead of straight up — reduces delt recruitment.',
+   alts:['Overhead Press','Arnold Press','Machine Shoulder Press']},
+];
+
+// ══════════════════════════════════════
+// WORKOUT PLAN DATA
+// ══════════════════════════════════════
+const TODAY = '2026-05-14';
+
+function dOffset(n){const d=new Date('2026-05-14T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+
+let PLAN = [
+  {date:dOffset(-4),title:'Upper Body Strength',type:'strength',status:'complete',modified_by_ai:false,goal:'Heavy pressing and pulling',
+   coach_notes:'Great session. Keep bar path consistent on bench.',
+   exercises:[
+     {name:'Bench Press',sets:4,reps:5,weight_value:'80%',rest_time:'2-3 min',notes:'Drive feet into floor.'},
+     {name:'Pull-Up',sets:4,reps:8,weight_value:'BW',rest_time:'90 sec',notes:'Full ROM, dead hang each rep.'},
+     {name:'Overhead Press',sets:3,reps:8,weight_value:'70%',rest_time:'90 sec',notes:''},
+     {name:'Face Pull',sets:3,reps:15,weight_value:'40 lbs',rest_time:'60 sec',notes:''},
+   ]},
+  {date:dOffset(-3),title:'Lower Body Strength',type:'strength',status:'complete',modified_by_ai:false,goal:'Heavy squat and hinge',
+   coach_notes:'Hit all sets. Add 5 lbs to squat next week.',
+   exercises:[
+     {name:'Back Squat',sets:4,reps:5,weight_value:'80%',rest_time:'3 min',notes:''},
+     {name:'Romanian Deadlift',sets:3,reps:8,weight_value:'65%',rest_time:'2 min',notes:''},
+     {name:'Leg Press',sets:3,reps:10,weight_value:'180 lbs',rest_time:'90 sec',notes:''},
+     {name:'Calf Raise',sets:4,reps:15,weight_value:'100 lbs',rest_time:'60 sec',notes:''},
+   ]},
+  {date:dOffset(-2),title:'Rest Day',type:'rest',status:'rest',modified_by_ai:false,goal:'',coach_notes:'Light walk recommended.',exercises:[]},
+  {date:dOffset(-1),title:'Upper Body Hypertrophy',type:'hypertrophy',status:'missed',modified_by_ai:false,goal:'Volume — chest and back',
+   coach_notes:'Focus on pump. Keep rest 60-90 sec only.',
+   exercises:[
+     {name:'Incline DB Press',sets:4,reps:10,weight_value:'60 lbs',rest_time:'75 sec',notes:''},
+     {name:'Cable Row',sets:4,reps:12,weight_value:'120 lbs',rest_time:'75 sec',notes:''},
+     {name:'Lateral Raise',sets:4,reps:15,weight_value:'20 lbs',rest_time:'60 sec',notes:''},
+     {name:'Tricep Pushdown',sets:3,reps:15,weight_value:'55 lbs',rest_time:'60 sec',notes:''},
+     {name:'Hammer Curl',sets:3,reps:12,weight_value:'35 lbs',rest_time:'60 sec',notes:''},
+   ]},
+  {date:TODAY,title:'Lower Body Hypertrophy',type:'hypertrophy',status:'upcoming',modified_by_ai:false,goal:'Volume — quads, hamstrings, glutes',
+   coach_notes:'Keep rest under 90 sec. Do not max out.',
+   exercises:[
+     {name:'Back Squat',sets:4,reps:10,weight_value:'70%',rest_time:'90 sec',notes:'Same bar path as strength day.'},
+     {name:'Romanian Deadlift',sets:3,reps:12,weight_value:'60%',rest_time:'75 sec',notes:''},
+     {name:'Bulgarian Split Squat',sets:3,reps:12,weight_value:'50 lbs',rest_time:'75 sec',notes:'Per leg.'},
+     {name:'Leg Curl',sets:3,reps:15,weight_value:'90 lbs',rest_time:'60 sec',notes:''},
+     {name:'Goblet Squat',sets:2,reps:20,weight_value:'35 lbs',rest_time:'60 sec',notes:'Finisher.'},
+   ]},
+  {date:dOffset(1),title:'Conditioning',type:'conditioning',status:'upcoming',modified_by_ai:false,goal:'Aerobic base and work capacity',
+   coach_notes:'HR 130-160 bpm. No heavy lifting.',
+   exercises:[
+     {name:'Kettlebell Swing',sets:5,reps:15,weight_value:'53 lbs',rest_time:'45 sec',notes:''},
+     {name:'Box Jump',sets:4,reps:5,weight_value:'BW',rest_time:'60 sec',notes:''},
+     {name:'Plank',sets:3,reps:1,weight_value:'45 sec',rest_time:'45 sec',notes:''},
+   ]},
+  {date:dOffset(2),title:'Rest Day',type:'rest',status:'rest',modified_by_ai:false,goal:'',coach_notes:'Sleep and nutrition today.',exercises:[]},
+  {date:dOffset(3),title:'Full Body Strength',type:'strength',status:'upcoming',modified_by_ai:false,goal:'Top-end strength',
+   coach_notes:'Work up to a heavy triple on squat and bench.',
+   exercises:[
+     {name:'Back Squat',sets:3,reps:3,weight_value:'87%',rest_time:'3-4 min',notes:''},
+     {name:'Bench Press',sets:3,reps:3,weight_value:'87%',rest_time:'3-4 min',notes:''},
+     {name:'Deadlift',sets:3,reps:5,weight_value:'80%',rest_time:'3 min',notes:''},
+     {name:'Pull-Up',sets:3,reps:5,weight_value:'+25 lbs',rest_time:'2 min',notes:''},
+   ]},
+  {date:dOffset(7),title:'Upper Body Strength',type:'strength',status:'upcoming',modified_by_ai:false,goal:'Progressive overload — add 5 lbs',
+   coach_notes:'Bench goes up 5 lbs from last week.',
+   exercises:[
+     {name:'Bench Press',sets:4,reps:5,weight_value:'82%',rest_time:'2-3 min',notes:''},
+     {name:'Pull-Up',sets:4,reps:8,weight_value:'BW',rest_time:'90 sec',notes:''},
+     {name:'Overhead Press',sets:3,reps:8,weight_value:'72%',rest_time:'90 sec',notes:''},
+     {name:'Face Pull',sets:3,reps:15,weight_value:'45 lbs',rest_time:'60 sec',notes:''},
+   ]},
+  {date:dOffset(8),title:'Lower Body Strength',type:'strength',status:'upcoming',modified_by_ai:false,goal:'Squat up 5 lbs',
+   coach_notes:'Squat 5 lbs heavier than last week.',
+   exercises:[
+     {name:'Back Squat',sets:4,reps:5,weight_value:'82%',rest_time:'3 min',notes:''},
+     {name:'Romanian Deadlift',sets:3,reps:8,weight_value:'67%',rest_time:'2 min',notes:''},
+     {name:'Leg Press',sets:3,reps:10,weight_value:'185 lbs',rest_time:'90 sec',notes:''},
+     {name:'Calf Raise',sets:4,reps:15,weight_value:'105 lbs',rest_time:'60 sec',notes:''},
+   ]},
+  {date:dOffset(9),title:'Rest Day',type:'rest',status:'rest',modified_by_ai:false,goal:'',coach_notes:'Active recovery.',exercises:[]},
+  {date:dOffset(10),title:'Upper Body Hypertrophy',type:'hypertrophy',status:'upcoming',modified_by_ai:false,goal:'Volume — chest and back',
+   coach_notes:'Add 1 set to each main exercise vs last week.',
+   exercises:[
+     {name:'Incline DB Press',sets:5,reps:10,weight_value:'62 lbs',rest_time:'75 sec',notes:''},
+     {name:'Cable Row',sets:5,reps:12,weight_value:'125 lbs',rest_time:'75 sec',notes:''},
+     {name:'Lateral Raise',sets:4,reps:15,weight_value:'20 lbs',rest_time:'60 sec',notes:''},
+     {name:'Tricep Pushdown',sets:3,reps:15,weight_value:'57 lbs',rest_time:'60 sec',notes:''},
+     {name:'Hammer Curl',sets:3,reps:12,weight_value:'37 lbs',rest_time:'60 sec',notes:''},
+   ]},
+];
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let currentUser = null;
+let selectedPlanDate = TODAY;
+let calView = 'month';
+let calOffset = 0;
+let pendingChange = null;
+let changeLog = [];
+let setLogs = {}; // date -> exIdx -> setIdx -> {w,r,rpe,done}
+let completedDates = [];
+let libFilter = 'All';
+let selectedExercise = null;
+let authMode = 'login';
+
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem('vanta_state')||'{}');
+    changeLog = s.changeLog||[];
+    setLogs = s.setLogs||{};
+    completedDates = s.completedDates||['2026-05-10','2026-05-11','2026-05-13'];
+    if(s.plan) PLAN = s.plan;
+  } catch(e){}
+}
+function saveState(){
+  localStorage.setItem('vanta_state',JSON.stringify({changeLog,setLogs,completedDates,plan:PLAN}));
+}
+
+// ══════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════
+function authSwitch(mode,btn){
+  authMode=mode;
+  document.querySelectorAll('.auth-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('authName').style.display=mode==='signup'?'':'none';
+  document.getElementById('authBtn').textContent=mode==='signup'?'Create Account':'Sign In';
+}
+function handleAuth(){
+  const email=document.getElementById('authEmail').value.trim()||'thomas@gym.com';
+  const name=document.getElementById('authName').value.trim()||email.split('@')[0];
+  const displayName=authMode==='signup'?name:capitalizeFirst(email.split('@')[0]);
+  currentUser={name:displayName,email};
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appShell').style.display='flex';
+  document.getElementById('userPill').textContent=displayName;
+  loadState();
+  initApp();
+}
+function logout(){
+  currentUser=null;
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+}
+
+// ══════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════
+function initApp(){
+  renderPlanSidebar();
+  renderPlanDay(TODAY);
+  renderCalendar();
+  renderChangeLog();
+  renderLibrary();
+  appendChatMsg('Hey! I\'m your Vanta coach. Life gets in the way — I\'m here to fix the plan when it does. Use the quick actions above or just tell me what\'s going on.','ai');
+}
+
+function switchTab(id,btn){
+  document.querySelectorAll('.ttab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='calendar') renderCalendar();
+}
+
+// ══════════════════════════════════════
+// MY PLAN
+// ══════════════════════════════════════
+function renderPlanSidebar(){
+  // Week dots (Mon–Sun of current week)
+  const today = parseDate(TODAY);
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
+  const dayLetters=['M','T','W','T','F','S','S'];
+  let dotsHtml='';
+  for(let i=0;i<7;i++){
+    const d=new Date(weekStart);
+    d.setDate(weekStart.getDate()+i);
+    const ds=toDS(d);
+    const plan=PLAN.find(p=>p.date===ds);
+    let cls='dot-upcoming',icon='';
+    if(ds===TODAY){cls='dot-today';icon='●';}
+    else if(completedDates.includes(ds)){cls='dot-done';icon='✓';}
+    else if(plan&&plan.type==='rest'){cls='dot-rest';}
+    else if(plan&&plan.status==='missed'){cls='dot-missed';icon='✗';}
+    dotsHtml+=`<div class="wd"><div class="wd-label">${dayLetters[i]}</div><div class="wd-dot ${cls}">${icon}</div></div>`;
+  }
+  document.getElementById('weekDots').innerHTML=dotsHtml;
+
+  // Day list
+  let html='';
+  PLAN.forEach(day=>{
+    const isToday=day.date===TODAY;
+    const isSelected=day.date===selectedPlanDate;
+    const status=day.modified_by_ai?'modified':day.status;
+    const sc={upcoming:'var(--accent)',complete:'var(--success)',missed:'var(--danger)',rest:'var(--muted)',modified:'var(--warning)'}[status]||'var(--muted)';
+    html+=`<div class="plan-day-btn${isSelected?' active':''}${isToday?' is-today':''}" id="pdb-${day.date}" onclick="selectPlanDay('${day.date}')">
+      <div class="pdb-top"><span class="pdb-date">${fmtShort(parseDate(day.date))}${isToday?' · Today':''}</span>
+        <span style="font-size:0.62rem;padding:2px 7px;border-radius:20px;font-weight:700;background:${sc}22;color:${sc}">${capitalizeFirst(day.modified_by_ai?'modified':day.status)}</span>
+      </div>
+      <div class="pdb-title">${day.title}</div>
+      <div class="pdb-type type-${day.type}">${capitalizeFirst(day.type)}</div>
+    </div>`;
+  });
+  document.getElementById('planDayList').innerHTML=html;
+
+  // Streak badge
+  document.getElementById('streakNum').textContent=calcStreak();
+}
+
+function selectPlanDay(dateStr){
+  selectedPlanDate=dateStr;
+  renderPlanSidebar();
+  renderPlanDay(dateStr);
+}
+
+function renderPlanDay(dateStr){
+  const day=PLAN.find(d=>d.date===dateStr);
+  if(!day){document.getElementById('planMain').innerHTML='';return;}
+  const isToday=dateStr===TODAY;
+  const container=document.getElementById('planMain');
+
+  if(day.type==='rest'){
+    container.innerHTML=`
+      ${renderStatsStrip()}
+      <div class="day-card${isToday?' is-today':''}">
+        <div class="day-card-top"><div class="day-card-meta"><div class="dc-date">${fmtLong(parseDate(day.date))}${isToday?' — Today':''}</div><div class="dc-title">${day.title}</div></div></div>
+        <div class="rest-card"><div class="rest-icon">🛌</div><div class="rest-title">Scheduled Rest Day</div><div style="font-size:0.85rem;color:var(--muted)">${day.coach_notes}</div></div>
+      </div>`;
+    return;
+  }
+
+  const statusColors={upcoming:'var(--accent)',complete:'var(--success)',missed:'var(--danger)',modified:'var(--warning)'};
+  const sc=statusColors[day.modified_by_ai?'modified':day.status]||'var(--accent)';
+  const isDone=completedDates.includes(dateStr)||day.status==='complete';
+
+  let exercisesHtml='';
+  day.exercises.forEach((ex,ei)=>{
+    exercisesHtml+=renderExerciseBlock(dateStr,day,ex,ei,isToday);
+  });
+
+  container.innerHTML=`
+    ${renderStatsStrip()}
+    <div class="day-card${isToday?' is-today':''}">
+      ${day.modified_by_ai?`<div class="modified-bar">⚡ Modified by Coach — ${day.ai_reason||'Adjusted for your request.'}</div>`:''}
+      <div class="day-card-top">
+        <div class="day-card-meta">
+          <div class="dc-date">${fmtLong(parseDate(day.date))}${isToday?' — Today':''}</div>
+          <div class="dc-title">${day.title}</div>
+          <div class="dc-goal">${day.goal}</div>
+        </div>
+        <span class="status-chip" style="background:${sc}22;color:${sc}">${capitalizeFirst(day.modified_by_ai?'Modified':day.status)}</span>
+      </div>
+      <div class="type-row">
+        <div class="type-pill"><div class="type-dot dot-${day.type}"></div><span class="type-${day.type}">${capitalizeFirst(day.type)}</span></div>
+      </div>
+      ${day.coach_notes?`<div class="coach-note"><div class="coach-note-label">Coach Notes</div>${day.coach_notes}</div>`:''}
+      <div id="ex-blocks-${dateStr}">${exercisesHtml}</div>
+      <div class="day-actions">
+        ${!isDone?`<button class="btn btn-complete" onclick="markDayComplete('${dateStr}')">✓ Mark Workout Complete</button>`:`<span style="color:var(--success);font-weight:700;font-size:0.88rem">✓ Completed</span>`}
+        <button class="btn btn-secondary btn-sm" onclick="openCoachForDay('${dateStr}','ask')">Ask Coach</button>
+        <button class="btn btn-secondary btn-sm" onclick="openCoachForDay('${dateStr}','modify')">Modify</button>
+        <button class="btn btn-warning btn-sm" onclick="openCoachForDay('${dateStr}','swap')">Swap Exercise</button>
+      </div>
+    </div>`;
+}
+
+function renderExerciseBlock(dateStr,day,ex,ei,isToday){
+  const logs=((setLogs[dateStr]||{})[ei])||{};
+  const doneSets=Object.values(logs).filter(s=>s.done).length;
+  const allDone=doneSets>=ex.sets;
+
+  let rows='';
+  for(let si=0;si<ex.sets;si++){
+    const log=logs[si]||{w:'',r:'',rpe:'',done:false};
+    rows+=`<tr class="log-row${log.done?' done':''}" id="row-${dateStr}-${ei}-${si}">
+      <td><span class="set-num">${si+1}</span></td>
+      <td class="target-cell">${ex.reps} @ ${ex.weight_value}</td>
+      <td><input class="log-input" type="number" placeholder="lbs" value="${log.w}" min="0" step="5" onchange="logSet('${dateStr}',${ei},${si},'w',this.value)"/></td>
+      <td><input class="log-input" type="number" placeholder="reps" value="${log.r}" min="0" step="1" onchange="logSet('${dateStr}',${ei},${si},'r',this.value)"/></td>
+      <td><input class="log-input rpe-input" type="number" placeholder="RPE" value="${log.rpe}" min="1" max="10" step="0.5" onchange="logSet('${dateStr}',${ei},${si},'rpe',this.value)"/></td>
+      <td><button class="check-btn${log.done?' done':''}" id="chk-${dateStr}-${ei}-${si}" onclick="toggleSet('${dateStr}',${ei},${si})">${log.done?'✓':''}</button></td>
+    </tr>`;
+  }
+
+  return `<div class="exercise-block${allDone?' all-done':''}" id="exblock-${dateStr}-${ei}">
+    <div class="ex-header" onclick="toggleExBlock('${dateStr}',${ei})">
+      <div class="ex-header-left">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-muscles">${getExMuscles(ex.name)}</div>
+      </div>
+      <div class="ex-header-right">
+        <span class="ex-badge diff-${getExDiff(ex.name)}">${getExDiff(ex.name)}</span>
+        <span class="ex-progress">${doneSets}/${ex.sets} sets</span>
+        <span style="color:var(--muted);font-size:0.8rem">${allDone?'▲':'▼'}</span>
+      </div>
+    </div>
+    <div class="log-table-wrap" id="exbody-${dateStr}-${ei}" style="${allDone&&!isToday?'display:none':''}">
+      ${ex.notes?`<div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;padding:0 2px">📝 ${ex.notes}</div>`:''}
+      <table class="log-table">
+        <thead><tr><th>#</th><th>Target</th><th>Weight</th><th>Reps</th><th>RPE</th><th></th></tr></thead>
+        <tbody id="tbody-${dateStr}-${ei}">${rows}</tbody>
+      </table>
+      <button class="add-set-btn" onclick="addSet('${dateStr}',${ei})">+ Add Set</button>
+    </div>
+  </div>`;
+}
+
+function toggleExBlock(dateStr,ei){
+  const body=document.getElementById(`exbody-${dateStr}-${ei}`);
+  if(body) body.style.display=body.style.display==='none'?'':'none';
+}
+
+function logSet(dateStr,ei,si,field,val){
+  if(!setLogs[dateStr]) setLogs[dateStr]={};
+  if(!setLogs[dateStr][ei]) setLogs[dateStr][ei]={};
+  if(!setLogs[dateStr][ei][si]) setLogs[dateStr][ei][si]={w:'',r:'',rpe:'',done:false};
+  setLogs[dateStr][ei][si][field]=val;
+  saveState();
+}
+
+function toggleSet(dateStr,ei,si){
+  if(!setLogs[dateStr]) setLogs[dateStr]={};
+  if(!setLogs[dateStr][ei]) setLogs[dateStr][ei]={};
+  if(!setLogs[dateStr][ei][si]) setLogs[dateStr][ei][si]={w:'',r:'',rpe:'',done:false};
+  setLogs[dateStr][ei][si].done=!setLogs[dateStr][ei][si].done;
+  saveState();
+  const day=PLAN.find(d=>d.date===dateStr);
+  const ex=day?day.exercises[ei]:null;
+  const logs=setLogs[dateStr][ei];
+  const doneSets=Object.values(logs).filter(s=>s.done).length;
+  const allDone=ex&&doneSets>=ex.sets;
+  // Update row
+  const row=document.getElementById(`row-${dateStr}-${ei}-${si}`);
+  const chk=document.getElementById(`chk-${dateStr}-${ei}-${si}`);
+  if(row&&chk){
+    const isDone=setLogs[dateStr][ei][si].done;
+    row.className='log-row'+(isDone?' done':'');
+    chk.className='check-btn'+(isDone?' done':'');
+    chk.textContent=isDone?'✓':'';
+  }
+  // Update progress label
+  const block=document.getElementById(`exblock-${dateStr}-${ei}`);
+  if(block){
+    const prog=block.querySelector('.ex-progress');
+    if(prog) prog.textContent=`${doneSets}/${ex?ex.sets:0} sets`;
+    if(allDone) block.classList.add('all-done');
+    else block.classList.remove('all-done');
+  }
+  updateStatsStrip();
+}
+
+function addSet(dateStr,ei){
+  const day=PLAN.find(d=>d.date===dateStr);
+  if(!day) return;
+  day.exercises[ei].sets++;
+  saveState();
+  renderPlanDay(dateStr);
+}
+
+function markDayComplete(dateStr){
+  if(!completedDates.includes(dateStr)) completedDates.push(dateStr);
+  const day=PLAN.find(d=>d.date===dateStr);
+  if(day) day.status='complete';
+  saveState();
+  renderPlanSidebar();
+  renderPlanDay(dateStr);
+  renderCalendar();
+}
+
+function renderStatsStrip(){
+  const streak=calcStreak();
+  const {pct,completed,planned}=calcConsistency();
+  const vol=calcTodayVolume();
+  return `<div class="stats-strip" id="statsStrip">
+    <div class="stat-card"><div class="sv" style="color:var(--warning)">🔥 ${streak}</div><div class="sl">Day Streak</div></div>
+    <div class="stat-card"><div class="sv">${pct}%</div><div class="sl">Consistency (30d)</div><div class="consistency-bar"><div class="consistency-fill" style="width:${pct}%"></div></div></div>
+    <div class="stat-card"><div class="sv">${completed}/${planned}</div><div class="sl">Workouts This Month</div></div>
+    <div class="stat-card"><div class="sv">${vol.toLocaleString()}</div><div class="sl">Today's Volume (lbs)</div></div>
+  </div>`;
+}
+
+function updateStatsStrip(){
+  const strip=document.getElementById('statsStrip');
+  if(strip){
+    const vol=calcTodayVolume();
+    const cards=strip.querySelectorAll('.sv');
+    if(cards[3]) cards[3].textContent=vol.toLocaleString();
+  }
+}
+
+function calcStreak(){
+  let streak=0;
+  const d=new Date(TODAY+'T12:00:00');
+  for(let i=0;i<60;i++){
+    const ds=toDS(d);
+    const plan=PLAN.find(p=>p.date===ds);
+    if(!plan){d.setDate(d.getDate()-1);continue;}
+    if(plan.type==='rest'){d.setDate(d.getDate()-1);streak++;continue;}
+    if(completedDates.includes(ds)||plan.status==='complete'){streak++;d.setDate(d.getDate()-1);}
+    else break;
+  }
+  return streak;
+}
+
+function calcConsistency(){
+  const d=new Date(TODAY+'T12:00:00');
+  d.setDate(1);// start of month
+  let planned=0,completed=0;
+  const today=parseDate(TODAY);
+  const temp=new Date(d);
+  while(temp<=today){
+    const ds=toDS(temp);
+    const plan=PLAN.find(p=>p.date===ds);
+    if(plan&&plan.type!=='rest'){
+      planned++;
+      if(completedDates.includes(ds)||plan.status==='complete') completed++;
+    }
+    temp.setDate(temp.getDate()+1);
+  }
+  return {pct:planned?Math.round(completed/planned*100):0,completed,planned};
+}
+
+function calcTodayVolume(){
+  const logs=setLogs[TODAY]||{};
+  let vol=0;
+  Object.values(logs).forEach(exLog=>{
+    Object.values(exLog).forEach(s=>{
+      if(s.done&&s.w&&s.r) vol+=parseFloat(s.w)*parseFloat(s.r);
+    });
+  });
+  return Math.round(vol);
+}
+
+function getExMuscles(name){
+  const ex=EXERCISES.find(e=>e.name===name);
+  return ex?ex.muscles.join(', '):'';
+}
+function getExDiff(name){
+  const ex=EXERCISES.find(e=>e.name===name);
+  return ex?ex.difficulty:'beginner';
+}
+
+// ══════════════════════════════════════
+// CALENDAR
+// ══════════════════════════════════════
+function renderCalendar(){
+  if(calView==='month') renderMonthView();
+  else renderWeekView();
+}
+function calNav(dir){calOffset+=dir;renderCalendar();}
+function setCalView(v,btn){
+  calView=v;calOffset=0;
+  document.querySelectorAll('.cvbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCalendar();
+}
+
+function renderMonthView(){
+  const today=parseDate(TODAY);
+  const ref=new Date(today.getFullYear(),today.getMonth()+calOffset,1);
+  document.getElementById('calLbl').textContent=ref.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const firstDay=new Date(ref.getFullYear(),ref.getMonth(),1).getDay();
+  const daysInMonth=new Date(ref.getFullYear(),ref.getMonth()+1,0).getDate();
+  const wds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html='<div class="month-grid">';
+  wds.forEach(w=>{html+=`<div class="cal-weekday">${w}</div>`;});
+  for(let i=0;i<firstDay;i++){
+    const d=new Date(ref.getFullYear(),ref.getMonth(),-(firstDay-1)+i);
+    html+=calCellHTML(d,true);
+  }
+  for(let i=1;i<=daysInMonth;i++) html+=calCellHTML(new Date(ref.getFullYear(),ref.getMonth(),i),false);
+  const rem=(7-(firstDay+daysInMonth)%7)%7;
+  for(let i=1;i<=rem;i++) html+=calCellHTML(new Date(ref.getFullYear(),ref.getMonth()+1,i),true);
+  html+='</div>';
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+function calCellHTML(date,other){
+  const ds=toDS(date);
+  const plan=PLAN.find(p=>p.date===ds);
+  const isToday=ds===TODAY;
+  const isDone=completedDates.includes(ds)||(plan&&plan.status==='complete');
+  let cls='';
+  if(plan){
+    if(isDone) cls='s-complete';
+    else if(plan.status==='missed') cls='s-missed';
+    else if(plan.modified_by_ai) cls='s-modified';
+    else if(plan.type==='rest') cls='s-rest';
+    else cls='s-upcoming';
+  }
+  const lbl=plan&&plan.type!=='rest'?plan.title.split(' ').pop():'';
+  return `<div class="cal-cell ${cls}${other?' other-month':''}${isToday?' is-today':''}" onclick="selectCalDay('${ds}')">
+    <div class="cal-date-n">${date.getDate()}</div>
+    ${plan?`<div class="cal-dot"></div>${lbl?`<div class="cal-lbl">${lbl}</div>`:'`'}`:''}
+  </div>`;
+}
+
+function renderWeekView(){
+  const today=parseDate(TODAY);
+  const ws=new Date(today);
+  ws.setDate(today.getDate()-today.getDay()+calOffset*7);
+  const days=[];
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);days.push(d);}
+  document.getElementById('calLbl').textContent=`${days[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${days[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  const dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const tc={strength:'var(--accent)',hypertrophy:'#f472b6',conditioning:'var(--warning)',mobility:'var(--info)',recovery:'var(--success)',rest:'var(--muted)'};
+  let html='<div class="week-grid">';
+  days.forEach(d=>{
+    const ds=toDS(d);
+    const plan=PLAN.find(p=>p.date===ds);
+    const isToday=ds===TODAY;
+    const isDone=completedDates.includes(ds)||(plan&&plan.status==='complete');
+    const bc=isDone?'var(--success)':plan&&plan.status==='missed'?'var(--danger)':plan&&plan.modified_by_ai?'var(--warning)':isToday?'var(--accent-light)':'var(--border)';
+    html+=`<div class="week-cell" style="border-color:${bc}" onclick="selectCalDay('${ds}')">
+      <div class="week-day-n">${dn[d.getDay()]}</div>
+      <div class="week-date-n" style="${isToday?'color:var(--accent-light)':''}">${d.getDate()}</div>
+      ${plan?`<div class="week-title">${plan.title}</div>
+        <div class="week-chip" style="background:${tc[plan.type]||'var(--accent)'}22;color:${tc[plan.type]||'var(--accent)'}">${capitalizeFirst(plan.type)}</div>
+        <div style="margin-top:5px;font-size:0.62rem;padding:2px 7px;border-radius:20px;font-weight:700;display:inline-block;background:${bc}22;color:${bc}">${isDone?'Done':capitalizeFirst(plan.modified_by_ai?'Modified':plan.status)}</div>`
+      :'<div style="font-size:0.75rem;color:var(--muted)">No workout</div>'}
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+function selectCalDay(ds){
+  const plan=PLAN.find(p=>p.date===ds);
+  const panel=document.getElementById('calDetailPanel');
+  if(!plan){panel.innerHTML='<div class="no-sel">No workout scheduled.</div>';return;}
+  const isDone=completedDates.includes(ds)||plan.status==='complete';
+  const d=parseDate(ds);
+  let exHtml='';
+  plan.exercises.forEach(ex=>{
+    exHtml+=`<div class="cal-detail-ex"><strong>${ex.name}</strong><span>${ex.sets}×${ex.reps} @ ${ex.weight_value} | ${ex.rest_time}</span></div>`;
+  });
+  panel.innerHTML=`
+    <div class="cal-detail-date">${fmtLong(d)}</div>
+    <div class="cal-detail-title">${plan.title}</div>
+    ${plan.exercises.length?exHtml:'<div style="color:var(--muted);font-size:0.82rem">Rest day — no exercises.</div>'}
+    ${plan.coach_notes?`<div style="font-size:0.8rem;color:var(--muted);margin-top:10px;line-height:1.5">${plan.coach_notes}</div>`:''}
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px">
+      ${!isDone&&plan.type!=='rest'?`<button class="btn btn-success btn-sm" onclick="markDayComplete('${ds}');renderCalendar()">✓ Mark Complete</button>`:''}
+      ${plan.type!=='rest'?`<button class="btn btn-secondary btn-sm" onclick="openCoachForDay('${ds}','ask')">Ask Coach About This Day</button>`:''}
+    </div>`;
+}
+
+// ══════════════════════════════════════
+// COACH CHAT
+// ══════════════════════════════════════
+function openCoachForDay(dateStr,action){
+  switchTab('chat',document.querySelectorAll('.ttab')[2]);
+  const day=PLAN.find(d=>d.date===dateStr);
+  if(!day) return;
+  const msgs={ask:`Tell me about the ${fmtShort(parseDate(dateStr))} workout.`,modify:`Can you modify the ${day.title} workout?`,swap:`I need to swap an exercise in ${day.title}.`};
+  setTimeout(()=>{document.getElementById('chatInput').value=msgs[action]||'';sendChat();},200);
+}
+
+function triggerQA(type){
+  const msgs={
+    tired:"I'm tired today. Can you adjust today's workout?",
+    missed:"I missed yesterday's workout. What should I do?",
+    short:"I only have 35 minutes today.",
+    harder:"Push me harder today — I have a lot of energy.",
+    easier:"Make today's workout easier.",
+    swap:"I need to swap an exercise — I don't have the equipment.",
+    noequip:"My gym doesn't have that machine. Can you substitute?",
+    already:"I already trained that muscle group yesterday.",
+  };
+  document.getElementById('chatInput').value=msgs[type]||'';
+  sendChat();
+}
+
+function sendChat(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text) return;
+  appendChatMsg(text,'user');
+  input.value='';
+  setTimeout(()=>processChat(text),500);
+}
+
+function processChat(text){
+  const t=text.toLowerCase();
+  const today=PLAN.find(d=>d.date===TODAY);
+  const yesterday=PLAN.find(d=>d.date===dOffset(-1));
+
+  if(t.includes('tired')||t.includes('low energy')||t.includes('exhausted')){
+    if(today&&today.type!=='rest'){
+      proposeChange(today,'User reported fatigue.',
+        `Understood — energy is low today. I'll keep the main lift and cut volume by ~30%. Here's what changes for <strong>${today.title}</strong>:`,
+        [{t:'remove',s:`Remove last 1 set from each exercise`},{t:'remove',s:`Drop weights by 10%`},{t:'add',s:`Add 30 sec extra rest between sets`}],
+        today.title+' (Reduced Volume)',
+        today.exercises.map(ex=>({...ex,sets:Math.max(2,ex.sets-1)})),
+        'User fatigue — reduced volume by ~30%.'
+      );
+    } else appendChatMsg("Today is a rest day — perfect timing to recover. Make sure you're getting 7-9 hours of sleep and enough protein. Tomorrow is "+((PLAN.find(d=>d.date===dOffset(1)))||{title:'coming up'}).title+".","ai");
+    return;
+  }
+
+  if(t.includes('missed')&&(t.includes('yesterday')||t.includes('workout'))){
+    if(yesterday&&yesterday.status==='missed'){
+      appendChatMsg(`I see you missed <strong>${yesterday.title}</strong> yesterday. Here are your options:<br><br>
+        <strong>1. Skip it</strong> — continue with today's plan. You'll recover the volume over the week.<br>
+        <strong>2. Condense it</strong> — I'll add the top 2 exercises from yesterday into today's session.<br>
+        <strong>3. Move it</strong> — push today's workout and do yesterday's instead.<br><br>
+        Which option? Reply with 1, 2, or 3.`,'ai');
+    } else {
+      appendChatMsg(`I don't see a missed workout from yesterday in your plan. Your upcoming session is <strong>${today?today.title:'rest'}</strong>. Did you mean a different day?`,'ai');
+    }
+    return;
+  }
+
+  if(t.includes('35 min')||t.includes('30 min')||t.includes('short')||t.includes('not much time')||t.includes('only have')){
+    if(today&&today.exercises.length>2){
+      const trimmed=today.exercises.slice(0,Math.min(3,today.exercises.length)).map(ex=>({...ex,sets:Math.min(ex.sets,3)}));
+      proposeChange(today,'User short on time.',
+        `No problem. I'll keep the top compound lifts and cut everything else. Fits in 30–35 min:`,
+        [{t:'keep',s:`Keep: ${trimmed.map(e=>e.name).join(', ')}`},{t:'remove',s:`Remove: ${today.exercises.slice(3).map(e=>e.name).join(', ')||'accessory work'}`},{t:'add',s:`Cap each exercise at 3 sets`}],
+        today.title+' (Express)',
+        trimmed,
+        'User only had 35 minutes — trimmed to main compounds.'
+      );
+    }
+    return;
+  }
+
+  if(t.includes('harder')||t.includes('more energy')||t.includes('push me')||t.includes('easy')){
+    if(today&&today.type!=='rest'){
+      const amped=today.exercises.map(ex=>({...ex,sets:ex.sets+1,weight_value:ex.weight_value.includes('%')?(Math.min(100,parseInt(ex.weight_value)+5))+'%':ex.weight_value}));
+      proposeChange(today,'User requested increased intensity.',
+        `Let\'s go. I\'ll add a set to each exercise and bump percentages up 5%:`,
+        [{t:'add',s:'Add 1 set per exercise'},{t:'add',s:'Increase percentages by 5%'}],
+        today.title+' (High Intensity)',
+        amped,
+        'User had high energy — increased volume and intensity.'
+      );
+    }
+    return;
+  }
+
+  if(t.includes('easier')||t.includes('too hard')||t.includes('reduce')){
+    if(today){
+      const lightened=today.exercises.map(ex=>({...ex,sets:Math.max(2,ex.sets-1),weight_value:ex.weight_value.includes('%')?(Math.max(50,parseInt(ex.weight_value)-10))+'%':ex.weight_value}));
+      proposeChange(today,'User requested reduced difficulty.',
+        `I\'ll dial it back — remove a set per exercise and drop the weight percentages by 10%:`,
+        [{t:'remove',s:'Remove 1 set per exercise'},{t:'remove',s:'Drop weight by 10%'},{t:'add',s:'Extra 30 sec rest'}],
+        today.title+' (Lighter)',
+        lightened,
+        'User requested easier session.'
+      );
+    }
+    return;
+  }
+
+  if(t.includes('swap')||t.includes('substitute')||t.includes('replace')||t.includes('no equipment')||t.includes('doesn\'t have')||t.includes('don\'t have')){
+    if(today){
+      const swaps={'Back Squat':'Hack Squat','Romanian Deadlift':'Leg Curl','Bench Press':'DB Bench Press','Pull-Up':'Lat Pulldown','Overhead Press':'DB Shoulder Press','Bulgarian Split Squat':'Reverse Lunge','Leg Press':'Goblet Squat','Tricep Pushdown':'Overhead Tricep Extension'};
+      const swapped=today.exercises.map(ex=>({...ex,name:swaps[ex.name]||ex.name,notes:swaps[ex.name]?`Swapped from ${ex.name}.`:(ex.notes||'')}));
+      const changes=today.exercises.filter(ex=>swaps[ex.name]).map(ex=>`${ex.name} → ${swaps[ex.name]}`);
+      proposeChange(today,'User requested exercise swaps.',
+        `I\'ll replace exercises with alternatives that target the same muscles:`,
+        changes.length?changes.map(c=>({t:'remove',s:c})):[{t:'add',s:'Alternatives already loaded for all exercises'}],
+        today.title,
+        swapped,
+        'Exercises swapped for available alternatives.'
+      );
+    }
+    return;
+  }
+
+  if(t.includes('already trained')||t.includes('did legs')||t.includes('did arms')||t.includes('did chest')||t.includes('did back')){
+    appendChatMsg(`Got it — I can rearrange the week so you\'re not hitting the same muscles back-to-back. Which muscle group did you already train? I\'ll swap today\'s session for one that targets something else and push the original to later in the week.`,'ai');
+    return;
+  }
+
+  if(t.includes('why')||t.includes('explain')||t.includes('purpose')){
+    if(today){
+      appendChatMsg(`<strong>Why ${today.title}?</strong><br><br>
+        • <strong>Type:</strong> ${capitalizeFirst(today.type)} day<br>
+        • <strong>Goal:</strong> ${today.goal}<br>
+        • <strong>Volume:</strong> ${today.exercises.reduce((a,e)=>a+e.sets,0)} total sets — optimal for your training phase<br>
+        • <strong>Placement:</strong> Follows a rest day to maximize performance<br><br>
+        <em>${today.coach_notes}</em>`,'ai');
+    }
+    return;
+  }
+
+  // Number replies for missed workout flow
+  if(t==='2'&&yesterday&&yesterday.status==='missed'){
+    const top2=yesterday.exercises.slice(0,2);
+    const merged={...today,exercises:[...(today?today.exercises:[]),...top2],title:(today?today.title:'Session')+' + '+yesterday.title.split(' ')[0],coach_notes:'Condensed session — covers today\'s volume plus key exercises from yesterday.'};
+    proposeChange(today||{date:TODAY,exercises:[]},'Condensed missed workout into today.',
+      `I\'ll add the top 2 exercises from yesterday\'s missed session to the end of today\'s workout:`,
+      top2.map(e=>({t:'add',s:`Add: ${e.name} (${e.sets}×${e.reps})`})),
+      merged.title,
+      merged.exercises,
+      'Added missed exercises from yesterday into today.'
+    );
+    return;
+  }
+
+  // Fallback
+  const fallbacks=[
+    `I\'m looking at your plan. Could you be more specific? For example: which exercise, which day, or what's holding you back?`,
+    `Today is <strong>${today?today.title:'a rest day'}</strong>. Tell me what\'s going on and I\'ll figure out the best fix.`,
+    `I can modify workouts, swap exercises, adjust volume, or rearrange the week. What do you need?`,
+  ];
+  appendChatMsg(fallbacks[Math.floor(Math.random()*fallbacks.length)],'ai');
+}
+
+function proposeChange(day,reason,intro,diffs,newTitle,newExercises,aiReason){
+  pendingChange={day,newTitle,newExercises,aiReason:aiReason||reason};
+  const diffHtml=diffs.map(d=>`<div class="${d.t==='remove'?'diff-remove':d.t==='add'?'diff-add':''}">${d.t==='remove'?'✕':d.t==='add'?'✓':'→'} ${d.s}</div>`).join('');
+  const cardHtml=`<div class="confirm-card"><div class="confirm-title">Proposed Change</div><div class="confirm-diff">${diffHtml}</div><div class="confirm-btns"><button class="btn btn-primary btn-sm" onclick="approveChange()">Yes, Update My Plan</button><button class="btn btn-secondary btn-sm" onclick="declineChange()">No, Keep As Is</button></div></div>`;
+  appendChatMsg(`${intro}<br><br>Do you want me to update this in your plan?`,'ai',cardHtml);
+}
+
+function approveChange(){
+  if(!pendingChange) return;
+  const {day,newTitle,newExercises,aiReason}=pendingChange;
+  const original=JSON.parse(JSON.stringify(day));
+  day.title=newTitle;
+  day.exercises=newExercises;
+  day.modified_by_ai=true;
+  day.ai_reason=aiReason;
+  changeLog.unshift({date:TODAY,workout_date:day.date,reason:aiReason,original,updated:JSON.parse(JSON.stringify(day))});
+  pendingChange=null;
+  saveState();
+  renderPlanSidebar();
+  renderCalendar();
+  renderChangeLog();
+  if(selectedPlanDate===day.date) renderPlanDay(day.date);
+  appendChatMsg(`Done. <strong>${day.title}</strong> has been updated in your plan and marked as "Modified by Coach." The original is saved in the change log.`,'ai');
+}
+
+function declineChange(){
+  pendingChange=null;
+  appendChatMsg('No changes made. Your plan stays as scheduled.','ai');
+}
+
+function appendChatMsg(text,role,extra){
+  const c=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  const now=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const av=role==='ai'?'<div class="msg-av ai-av">🤖</div>':'<div class="msg-av user-av">👤</div>';
+  div.innerHTML=`${av}<div><div class="msg-bubble">${text}${extra||''}</div><div class="msg-time">${now}</div></div>`;
+  c.appendChild(div);
+  c.scrollTop=c.scrollHeight;
+}
+
+function renderChangeLog(){
+  const list=document.getElementById('changeLogList');
+  if(!changeLog.length){list.innerHTML='<div style="font-size:0.75rem;color:var(--muted)">No changes yet.</div>';return;}
+  list.innerHTML=changeLog.slice(0,10).map(c=>`<div class="log-entry"><div class="le-date">⚡ ${fmtShort(parseDate(c.date))}</div><div class="le-text">${c.reason}</div></div>`).join('');
+}
+
+// ══════════════════════════════════════
+// LIBRARY
+// ══════════════════════════════════════
+function renderLibrary(){
+  const cats=['All','Push','Pull','Legs','Core','Conditioning'];
+  const filtersEl=document.getElementById('libFilters');
+  filtersEl.innerHTML=cats.map(c=>`<button class="lib-filter-btn${c===libFilter?' active':''}" onclick="setLibFilter('${c}',this)">${c}</button>`).join('');
+  const filtered=libFilter==='All'?EXERCISES:EXERCISES.filter(e=>e.category===libFilter);
+  document.getElementById('libGrid').innerHTML=filtered.map((ex,i)=>`
+    <div class="lib-card${selectedExercise===ex.name?' selected':''}" onclick="selectExercise('${ex.name}')">
+      <div class="lib-card-name">${ex.name}</div>
+      <div class="lib-card-muscles">${ex.muscles.join(', ')}</div>
+      <div class="lib-card-bottom">
+        <span class="diff-badge diff-${ex.difficulty}">${capitalizeFirst(ex.difficulty)}</span>
+        <span class="cat-badge">${ex.category}</span>
+      </div>
+    </div>`).join('');
+}
+
+function setLibFilter(cat,btn){
+  libFilter=cat;
+  document.querySelectorAll('.lib-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLibrary();
+}
+
+function selectExercise(name){
+  selectedExercise=name;
+  renderLibrary();
+  const ex=EXERCISES.find(e=>e.name===name);
+  if(!ex) return;
+  const detail=document.getElementById('libDetail');
+  detail.innerHTML=`
+    <div class="lib-detail-name">${ex.name}</div>
+    <div class="lib-detail-muscles">${ex.muscles.join(' · ')}</div>
+    <div style="display:flex;gap:6px;margin-bottom:4px">
+      <span class="diff-badge diff-${ex.difficulty}">${capitalizeFirst(ex.difficulty)}</span>
+      <span class="diff-badge" style="background:var(--card2);color:var(--muted)">${ex.category}</span>
+    </div>
+    <div class="lib-section-label">3 Key Cues</div>
+    ${ex.cues.map((c,i)=>`<div class="cue-item"><div class="cue-num">${i+1}</div><div>${c}</div></div>`).join('')}
+    <div class="lib-section-label">Common Mistake</div>
+    <div class="mistake-box">⚠️ ${ex.mistake}</div>
+    <div class="lib-section-label">Alternatives</div>
+    <div class="alt-chips">${ex.alts.map(a=>`<span class="alt-chip">${a}</span>`).join('')}</div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:16px;width:100%" onclick="openCoachForExercise('${ex.name}')">Ask Coach About This</button>
+  `;
+}
+
+function openCoachForExercise(name){
+  switchTab('chat',document.querySelectorAll('.ttab')[2]);
+  setTimeout(()=>{document.getElementById('chatInput').value=`Tell me about ${name} — form tips and when to use it.`;sendChat();},200);
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function parseDate(s){return new Date(s+'T12:00:00');}
+function toDS(d){return d.toISOString().slice(0,10);}
+function fmtLong(d){return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
+function fmtShort(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function capitalizeFirst(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+function dOffset(n){const d=new Date('2026-05-14T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+</script>
+</body>
+</html>
